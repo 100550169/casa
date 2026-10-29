@@ -35,6 +35,7 @@ erDiagram
     text perfil
     text p256dh
     text auth
+    text idioma "es | en"
     timestamptz creada
     timestamptz usada
   }
@@ -50,7 +51,7 @@ erDiagram
 |---|---|---|
 | `casa_state` | 1 | `CHECK (id = 1)` prevents a second household from appearing by mistake |
 | `casa_copias` (backups) | ≤ 40 | 30 daily + 10 safety backups. Partial unique index: a single `diaria` backup per day, even under concurrent requests |
-| `push_suscripciones` | one per device | Deleted automatically when the push service answers `404` or `410` |
+| `push_suscripciones` | one per device | Stores the device's profile and language. Deleted automatically when the push service answers `404` or `410` |
 | `casa_meta` | a few | Generated VAPID keys and the date of the last reminder (once-a-day guarantee) |
 
 Subscriptions and backups live **outside** the document: they belong to a single device or are
@@ -165,6 +166,7 @@ idempotent (`CREATE … IF NOT EXISTS`, conditional `DO` blocks).
 | 001–007 | Schema of the first version, with accounts and families. No longer used; kept intact |
 | 008 | `casa_state` and migration of the state from the accounts version |
 | 009 | `casa_meta`, `push_suscripciones`, `casa_copias` |
+| 010 | `idioma` (language) column on `push_suscripciones` |
 
 Member ids from the accounts version (UUIDs) are translated into profile ids by
 `adoptarPerfiles()`, covered by `test/perfiles.test.js`.

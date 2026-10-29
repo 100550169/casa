@@ -71,6 +71,20 @@ This is the most delicate kind of change. Follow these steps in order:
 - If the demo uses it: a simulated response in `public/demo.js`.
 - A case in `test/http/api.js` and an entry in [docs/API.md](docs/API.md).
 
+## Adding UI text
+
+UI text is written in Spanish, the source language. Every new phrase also needs its English
+translation in `public/i18n.js`:
+
+- a fixed phrase goes into `CATALOGO_EN`, keyed by the **whole** text of the node;
+- a phrase with names or numbers goes into `PATRONES_EN` with `{1}`, `{2}` placeholders, more
+  specific patterns first;
+- push notification texts follow the same rules (there is a test that checks every notification
+  in `services/avisos.js` has a translation).
+
+Then open `/demo`, switch to English and make sure no Spanish is left on screen
+([ADR-0011](docs/adr/0011-runtime-ui-translation.md)).
+
 ## Architecture decisions
 
 A change that affects the structure (persistence, synchronization, security, dependencies) comes

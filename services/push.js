@@ -19,6 +19,8 @@
 const webpush = require("web-push");
 const { query } = require("../db");
 const { agrupar } = require("./avisos");
+// El mismo catálogo de traducciones que usa el navegador.
+const { normalizarIdioma, traducirAviso } = require("../public/i18n.js");
 
 // Solo se aceptan suscripciones de los servicios de avisos reales. El servidor
 // hace un POST a la dirección que le dan: sin esta lista, cualquiera con el
@@ -77,16 +79,17 @@ async function clavePublica() {
   return (await clavesVapid()).publicKey;
 }
 
-async function suscribir(perfil, sub) {
+async function suscribir(perfil, sub, idioma) {
   const s = validarSuscripcion(sub);
   if (!s) return false;
-  // El mismo móvil puede cambiar de perfil: se actualiza, no se duplica.
+  // El mismo móvil puede cambiar de perfil o de idioma: se actualiza, no se duplica.
   await query(
-    `INSERT INTO push_suscripciones (endpoint, perfil, p256dh, auth)
-          VALUES ($1, $2, $3, $4)
+    `INSERT INTO push_suscripciones (endpoint, perfil, p256dh, auth, idioma)
+          VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (endpoint) DO UPDATE
-          SET perfil = EXCLUDED.perfil, p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth`,
-    [s.endpoint, perfil, s.p256dh, s.auth]
+          SET perfil = EXCLUDED.perfil, p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth,
+              idioma = EXCLUDED.idioma`,
+    [s.endpoint, perfil, s.p256dh, s.auth, normalizarIdioma(idioma)]
   );
   return true;
 }
@@ -109,15 +112,22 @@ async function enviar(aviso, { soloEndpoint = null, ttl = 12 * 3600 } = {}) {
   const r = soloEndpoint
     ? await query("SELECT * FROM push_suscripciones WHERE endpoint = $1", [soloEndpoint])
     : await query("SELECT * FROM push_suscripciones WHERE perfil = $1", [aviso.para]);
-  const carga = JSON.stringify({
-    titulo: aviso.titulo, cuerpo: aviso.cuerpo, etiqueta: aviso.etiqueta || "casa",
-  });
+  // Un mismo aviso puede salir en varios idiomas: se traduce una vez por idioma.
+  const cargas = {};
+  const cargaEn = (idioma) => {
+    const id = normalizarIdioma(idioma);
+    if (!cargas[id]) {
+      const a = traducirAviso(aviso, id);
+      cargas[id] = JSON.stringify({ titulo: a.titulo, cuerpo: a.cuerpo, etiqueta: aviso.etiqueta || "casa" });
+    }
+    return cargas[id];
+  };
   let entregados = 0;
   await Promise.all(r.rows.map(async (s) => {
     try {
       await webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-        carga, { TTL: ttl, urgency: "normal" });
+        cargaEn(s.idioma), { TTL: ttl, urgency: "normal" });
       entregados++;
       await query("UPDATE push_suscripciones SET usada = now() WHERE endpoint = $1", [s.endpoint]);
     } catch (e) {

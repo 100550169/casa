@@ -63,7 +63,7 @@ people when there is something to do or to approve.
 
 ## 📸 Screenshots
 
-Sample data from the demo; all names are fictitious. The interface is in Spanish.
+Sample data from the demo, shown in English; all names are fictitious. The interface is also available in Spanish.
 
 <table>
   <tr>
@@ -105,6 +105,7 @@ More screenshots in [`docs/img/screenshots`](docs/img/screenshots/).
 | **Backups** | Daily in the database, automatic before every destructive operation and, optionally, nightly on GitHub |
 | **Multi-device** | Polling-based sync with optimistic concurrency: no device silently overwrites another's changes |
 | **Demo** | `/demo` runs the full app with fictitious data and a fake server inside the browser |
+| **Languages** | Spanish and English, chosen on each device; push notifications arrive in each phone's language |
 | **Accessibility** | WCAG AA contrast, visible focus, `prefers-reduced-motion` and ARIA labels |
 
 Two experiences on the same codebase: **mobile-first** for children and **desktop-first** for the
@@ -187,16 +188,18 @@ DATABASE_URL=postgres://postgres:prueba@localhost:55432/casa?sslmode=disable
 | Command | What it does |
 |---|---|
 | `npm start` | Starts the server |
-| `npm test` | 147 logic tests, no database or network |
+| `npm test` | 160 logic tests, no database or network |
 | `npm run test:http` | 45 checks against a real server and an empty PostgreSQL |
 | `npm run codigo` | Generates a random house code |
 
 Environment variables: [`.env.example`](.env.example) and
 [docs/DEPLOY-ON-RENDER.md](docs/DEPLOY-ON-RENDER.md#environment-variables).
 
-> **Language note:** the user interface is in Spanish, and so are the source code identifiers
-> and comments (`leerEstadoAlDia`, `planificarSemana`…), because the app was built for a
-> Spanish-speaking household. All documentation is in English.
+> **Language note:** the interface is available in **Spanish and English** (switch it from the
+> profile picker or the *Switch* menu). The source code uses Spanish identifiers and comments
+> (`leerEstadoAlDia`, `planificarSemana`…) because the app was built for a Spanish-speaking
+> household; UI text is written in Spanish and translated at runtime from a single catalog
+> ([ADR-0011](docs/adr/0011-runtime-ui-translation.md)). All documentation is in English.
 
 ## 🧱 Architecture
 
@@ -244,8 +247,8 @@ More in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 ## ✅ Testing
 
 - **Logic** (`test/*.test.js`): money, weighted assignment, sanitization, per-profile
-  permissions, streaks, month close, marketplace, concurrency, calendar, notifications, backups
-  and access code.
+  permissions, streaks, month close, marketplace, concurrency, calendar, notifications, backups,
+  access code and translations.
 - **API** (`test/http/api.js`): routes, status codes, permissions, rate limiting, backups and
   notifications, against a real PostgreSQL. It refuses to run against production.
 - **CI**: both suites run on every push to `main` and on every pull request, together with
@@ -282,7 +285,7 @@ Full strategy in [docs/TESTING.md](docs/TESTING.md).
 | [Data model](docs/DATA-MODEL.md) | State document, tables and migrations |
 | [Testing](docs/TESTING.md) | Strategy, suites and CI |
 | [Operations](docs/OPERATIONS.md) | Variables, scheduled jobs, backups and recovery |
-| [Architecture decisions](docs/adr/) | Ten ADRs with the context and alternatives of each decision |
+| [Architecture decisions](docs/adr/) | Eleven ADRs with the context and alternatives of each decision |
 | [AI-assisted development](docs/AI-ASSISTED-DEVELOPMENT.md) | How the project was built with an AI agent |
 | [Roadmap](docs/ROADMAP.md) | Status by module and next steps |
 
@@ -299,7 +302,7 @@ co-authorship. The process, quality criteria and lessons learned are in
 
 ## 🗺 Roadmap
 
-Version **3.3.0**, stable. Next steps: savings goals, iCal export of the calendar, splitting the
+Version **3.4.0**, stable. Next steps: savings goals, iCal export of the calendar, splitting the
 client into modules and automated UI tests. Details in [docs/ROADMAP.md](docs/ROADMAP.md) and
 changes in [CHANGELOG.md](CHANGELOG.md).
 

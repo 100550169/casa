@@ -64,6 +64,7 @@ flowchart LR
 | Reliability | Oct 2026 | Push notifications, three-layer backups, house code, Dependabot | Usage showed forgotten chores: the app had to **remind** people |
 | Maintenance | Oct 2026 | Express 5, HTTP tests in CI, AA accessibility | Up-to-date dependencies and verifiable quality |
 | Open source | Oct 2026 | Public repository with fictitious data, Render Blueprint, MIT license and documentation | So any family can run it at home |
+| Languages | Oct 2026 | Spanish and English per device, including push notifications | Make the app usable beyond a Spanish-speaking home ([ADR-0011](adr/0011-runtime-ui-translation.md)) |
 
 The simplification phase best represents the method: removing code (authentication, email,
 tokens) improved the product more than adding it.
@@ -109,7 +110,7 @@ Real cases in which verification found a problem before, or right after, it reac
 |---|---|
 | Duration | June – October 2026 |
 | Code | ~7,800 lines (server, client, SQL and tests) |
-| Automated checks | 147 logic + 45 API |
+| Automated checks | 160 logic + 45 API |
 | Production dependencies | 4 |
 | Infrastructure cost | €0/month |
-| Recorded decisions | 10 ADRs |
+| Recorded decisions | 11 ADRs |

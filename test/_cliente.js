@@ -12,7 +12,7 @@
 //  tocando ctx.S desde fuera: eso crearía otra variable y las pruebas pasarían
 //  en falso.
 //
-//  El navegador carga /perfiles.js antes que la app; aquí se hace lo mismo, y
+//  El navegador carga /perfiles.js e /i18n.js antes que la app; aquí se hace lo mismo, y
 //  con el archivo de verdad: si alguien cambiara los ids de los perfiles, las
 //  pruebas se enterarían.
 // ============================================================================
@@ -27,6 +27,8 @@ function cargarCliente() {
   const codigo = partes[partes.length - 1].split("</script>")[0];
   const perfiles = fs.readFileSync(
     path.join(__dirname, "..", "public", "perfiles.js"), "utf8");
+  const idiomas = fs.readFileSync(
+    path.join(__dirname, "..", "public", "i18n.js"), "utf8");
 
   const nodo = {
     style: {}, classList: { add() {}, remove() {}, contains: () => false },
@@ -56,6 +58,7 @@ function cargarCliente() {
   vm.createContext(ctx);
   // Primero los perfiles, como en el navegador: la app los da por presentes.
   vm.runInContext(perfiles, ctx);
+  vm.runInContext(idiomas, ctx);
   // bootstrap() falla al no haber servidor: es esperado, solo queremos las funciones.
   try { vm.runInContext(codigo, ctx); } catch (e) { /* esperado */ }
 

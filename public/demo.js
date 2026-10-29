@@ -43,9 +43,42 @@
     return d;
   }
 
+  // --- Datos de ejemplo en inglés ---------------------------------------------
+  // La interfaz la traduce i18n.js, pero los nombres de tareas, platos y premios
+  // son DATOS de la casa y no se tocan. En la demo, que es lo primero que ve
+  // alguien que llega al repositorio, también se dan en inglés.
+  const DEMO_EN = {
+    "Hacer la cama": "Make the bed", "Recoger tu plato": "Clear your plate",
+    "Preparar la mochila": "Pack your school bag", "Poner una lavadora": "Do a load of laundry",
+    "Limpiar el baño": "Clean the bathroom", "Aspirar el salón": "Vacuum the living room",
+    "Poner la lavadora": "Run the washing machine", "Sacar la basura": "Take out the trash",
+    "Pasear al perro": "Walk the dog",
+    "Tostadas con tomate": "Toast with tomato", "Yogur con cereales": "Yogurt with cereal",
+    "Batido de frutas": "Fruit smoothie", "Pasta con tomate": "Pasta with tomato sauce",
+    "Pollo al horno": "Roast chicken", "Lentejas": "Lentil stew", "Arroz al horno": "Baked rice",
+    "Macarrones": "Macaroni", "Tortilla francesa": "Omelette", "Ensalada César": "Caesar salad",
+    "Sopa y croquetas": "Soup and croquettes", "Pescado a la plancha": "Grilled fish",
+    "rápido": "quick", "vegetariano": "vegetarian", "legumbres": "legumes",
+    "1 h más de pantalla": "1 extra hour of screen time", "Elegir la peli del finde": "Pick the weekend movie",
+    "Noche sin tareas": "Chore-free evening", "Cena a elegir": "Choose dinner",
+    "Colegio": "School", "Baloncesto": "Basketball", "Robótica": "Robotics", "Danza": "Dance",
+    "Tengo entreno, ¿alguien?": "I have practice, anyone?",
+  };
+  const demoEnIngles = typeof idiomaGuardado === "function" && idiomaGuardado() === "en";
+  // Solo se sustituyen VALORES, nunca claves: "Lun" o "desayuno" son claves del
+  // estado y tienen que seguir siendo las mismas.
+  function datosEnIdioma(v) {
+    if (!demoEnIngles) return v;
+    if (Array.isArray(v)) return v.map(datosEnIdioma);
+    if (v && typeof v === "object") {
+      return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, datosEnIdioma(x)]));
+    }
+    return typeof v === "string" && Object.prototype.hasOwnProperty.call(DEMO_EN, v) ? DEMO_EN[v] : v;
+  }
+
   // --- La casa de ejemplo ---------------------------------------------------
   function estadoInicial() {
-    return {
+    return datosEnIdioma({
       currentMonth: claveMes(hoy), currentWeek: claveSemana(hoy),
       rate: 0.05, fixedPay: 8,
       // Los mismos cuatro perfiles que la app real, con la disponibilidad de
@@ -162,7 +195,7 @@
         { kind: "extra", taskId: "e4", day: (hoy.getDay() + 6) % 7, slot: "noche" },
         { kind: "extra", taskId: "e5", day: 0, slot: "tarde" },
       ],
-    };
+    });
   }
 
   let ESTADO = estadoInicial();

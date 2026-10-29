@@ -43,6 +43,7 @@ flowchart LR
 | **PWA** | Framework-free HTML + CSS + JS (`public/index.html`) | Children's mobile UI and parents' desktop UI; polling and conflict merging |
 | **Service worker** | `public/sw.js` | Caches the app shell (never the API) and receives notifications |
 | **Profiles** | `public/perfiles.js` (UMD) | Single source of truth for profiles; loaded by the browser (`<script>`) and the server (`require`) |
+| **Languages** | `public/i18n.js` (UMD) | Translation engine and catalog; translates the rendered UI in the browser and push notifications on the server ([ADR-0011](adr/0011-runtime-ui-translation.md)) |
 | **API** | Express 5 (`server.js`, `routes/`) | Validation, authorization, persistence and orchestration |
 | **Domain** | `services/` | Business rules as pure functions: sanitization, cycles, streaks, points, notifications |
 | **Persistence** | PostgreSQL 16 | Versioned state document, backups, push subscriptions, metadata |
@@ -67,7 +68,7 @@ db/            pg pool and idempotent migrations
 ```
 
 The rule is that **business logic performs no I/O**: it receives a state and returns another
-one (or a list of notifications). That is what allows 147 tests to cover it in seconds, with no
+one (or a list of notifications). That is what allows 160 tests to cover it in seconds, with no
 database or network.
 
 ## Request lifecycle
@@ -187,6 +188,8 @@ flowchart LR
   `casa_meta`.
 - Only subscriptions whose `endpoint` belongs to a known push service are accepted, so the server
   cannot be used to send requests to arbitrary addresses (SSRF).
+- Each subscription stores the device's language, and every notification is translated with the
+  shared catalog before delivery (`traducirAviso`).
 
 ## Backups
 
@@ -204,7 +207,11 @@ See [ADR-0009](adr/0009-three-layer-backups.md).
 - A single `index.html` with token-based CSS and JavaScript organized in sections (engine,
   desktop views, mobile views, synchronization).
 - Systematic escaping (`esc`, `escColor`) of every piece of state before rendering it.
-- `localStorage` only for device preferences.
+- `localStorage` only for device preferences (profile, open tab, house code, language).
+- **Languages:** UI text is written in Spanish; with another language selected, `i18n.js`
+  translates every rendered text node and visible attribute through a `MutationObserver`. Only
+  whole-node matches are translated, so household data is never altered
+  ([ADR-0011](adr/0011-runtime-ui-translation.md)).
 - The service worker never caches `/api`: data is always fresh or explicitly unavailable.
 - In `/demo`, `demo.js` intercepts `fetch` and answers from an in-memory state.
 

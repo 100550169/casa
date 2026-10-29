@@ -15,5 +15,6 @@ consequences. Format by [Michael Nygard](https://cognitect.com/blog/2011/11/15/d
 | [0008](0008-framework-free-client.md) | Framework-free client and minimal dependencies | Accepted (to be revisited) |
 | [0009](0009-three-layer-backups.md) | Three-layer backups | Accepted |
 | [0010](0010-optional-house-code.md) | Optional house code as access control | Accepted |
+| [0011](0011-runtime-ui-translation.md) | Runtime UI translation with a shared phrase catalog | Accepted |
 
 To propose a new decision, copy the structure of any of them and use the next free number.

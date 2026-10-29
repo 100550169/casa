@@ -1,6 +1,6 @@
 {
   "name": "casa",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "private": true,
   "description": "Household management for families: chores, weekly allowance, schedule-aware calendar, meal plans, push notifications and automatic backups",
   "keywords": [

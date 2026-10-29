@@ -2,7 +2,7 @@
 //  Rutas de los avisos en el móvil.
 //
 //    GET  /api/push/clave          clave pública para suscribirse
-//    POST /api/push/suscribir      este móvil quiere avisos (para su perfil)
+//    POST /api/push/suscribir      este móvil quiere avisos (para su perfil, en su idioma)
 //    POST /api/push/baja           este móvil ya no quiere avisos
 //    POST /api/push/prueba         manda un aviso de prueba a ESTE móvil
 //    GET  /api/push/estado         cuántos móviles reciben avisos (papás)
@@ -40,7 +40,7 @@ router.get("/clave", envolver(async (req, res) => {
 }));
 
 router.post("/suscribir", envolver(async (req, res) => {
-  const ok = await push.suscribir(perfilDe(req), req.body && req.body.suscripcion);
+  const ok = await push.suscribir(perfilDe(req), req.body && req.body.suscripcion, req.body && req.body.idioma);
   if (!ok) return res.status(400).json({ error: "suscripcion_invalida" });
   res.json({ ok: true, perfil: perfilDe(req) });
 }));

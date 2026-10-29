@@ -2,7 +2,7 @@
 
 | Level | Tool | Count | What it covers | When it runs |
 |---|---|---:|---|---|
-| Domain logic | `node:test` | 147 | Pure business rules, no database or network | `npm test`, CI |
+| Domain logic | `node:test` | 160 | Pure business rules, no database or network | `npm test`, CI |
 | End-to-end API | `test/http/api.js` | 45 | Full HTTP layer against a real PostgreSQL | `npm run test:http`, CI |
 | User interface | Browser (assisted manual pass) | — | Every screen in `/demo` at 375 px and on desktop, console free of errors | before every release |
 | Production | Read-only checks | — | Stable version across reads, health, no writes caused by reads | after every deployment |
@@ -30,6 +30,7 @@ npm test
 | `concurrencia.test.js` | 6 | Optimistic versioning and the client's per-field merge |
 | `ciclos.test.js` | 5 | Week and month rollover driven by the server clock |
 | `copias.test.js` | 5 | Single daily backup, retention, restore |
+| `i18n.test.js` | 13 | Translation catalog: whole-node matching, patterns, days and months, notifications in every language |
 
 ### Testing client code
 
@@ -76,6 +77,7 @@ Before every release with visible changes:
 2. Walk through every parent and child screen at 375 px and on desktop.
 3. No `undefined`, `NaN` or `[object Object]` on screen; console free of errors.
 4. Zero requests to `/api/` in demo mode.
+5. Repeat in English: no Spanish phrase left on screen (the catalog covers every UI text).
 
 ## Production verification
 

@@ -2,8 +2,8 @@
 
 A guide for the people who use the app every day. No technical knowledge required.
 
-> The interface is in Spanish. Button and screen names are quoted as they appear in the app,
-> followed by their English meaning.
+> The interface is available in Spanish and English. This guide quotes the Spanish button
+> names, followed by their English label.
 
 - [First access](#1-first-access)
 - [Installing the app on a phone](#2-installing-the-app-on-a-phone)
@@ -25,6 +25,10 @@ A guide for the people who use the app every day. No technical knowledge require
 
 There is no sign-up, email or password. The device remembers the profile; to change it, use the
 **Cambiar** (*switch*) button in the top bar.
+
+**Language.** Pick **Español** or **English** at the bottom of the profile picker, or under
+**Cambiar → Idioma** (*Switch → Language*). Each device keeps its own language, and phone
+notifications arrive in that language too.
 
 > A slow first load is expected: the free server sleeps after 15 minutes without traffic and
 > takes up to about a minute to wake up.

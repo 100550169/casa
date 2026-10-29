@@ -172,10 +172,12 @@ exist.
 
 ### `POST /api/push/suscribir`
 
-Registers the device to receive notifications for the profile given in `X-Perfil`.
+Registers the device to receive notifications for the profile given in `X-Perfil`, in the
+language given in `idioma` (`es` or `en`; anything else falls back to `es`). Calling it again
+updates the profile and the language.
 
 ```json
-{ "suscripcion": { "endpoint": "https://web.push.apple.com/…", "keys": { "p256dh": "…", "auth": "…" } } }
+{ "suscripcion": { "endpoint": "https://web.push.apple.com/…", "keys": { "p256dh": "…", "auth": "…" } }, "idioma": "en" }
 ```
 
 Only HTTPS endpoints of known push services (Apple, Google, Mozilla, Microsoft) are accepted.

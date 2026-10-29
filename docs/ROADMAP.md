@@ -1,6 +1,6 @@
 # Roadmap
 
-Status as of 28 October 2026, version 3.3.0. Percentages measure **"ready for daily use"**, not
+Status as of 29 October 2026, version 3.4.0. Percentages measure **"ready for daily use"**, not
 amount of code.
 
 ## Status by module
@@ -9,14 +9,15 @@ amount of code.
 |---|:-:|---|
 | Chore and allowance engine | 95 % | Thresholds, weighted assignment, levels, bonuses |
 | Profiles and permissions | 95 % | Rules enforced on the server |
-| Tests and CI | 95 % | 147 logic + 45 API checks; UI automation still missing |
+| Tests and CI | 95 % | 160 logic + 45 API checks; UI automation still missing |
 | Parents' dashboard | 90 % | Household view, per-child detail, calendar, backups, notifications |
 | Streaks | 90 % | Computed on the server, with weekly carry-over |
 | Sibling marketplace | 90 % | Explicit seller acceptance |
 | Backups | 90 % | Three layers, one-click restore |
 | House code | 90 % | Implemented; recommended for every public deployment |
 | PWA and installation | 90 % | Android and iOS, with notifications |
-| Demo | 90 % | Makes no API requests at all |
+| Demo | 90 % | Makes no API requests at all; sample data in both languages |
+| Languages | 85 % | Spanish and English per device, notifications included; the privacy policy is still Spanish-only |
 | Calendar | 85 % | Drag and drop still missing |
 | Push notifications | 85 % | Events and daily reminder |
 | Rewards | 85 % | Point reservation, stock |

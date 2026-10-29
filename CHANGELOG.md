@@ -7,6 +7,17 @@ repository and are summarized here from its history.
 
 ## [Unreleased]
 
+## [3.4.0] — 2026-10-29
+
+### Added
+- Language selection: Spanish and English, chosen on each device from the profile picker or the
+  *Switch* menu, defaulting to the browser language. UI text is translated at runtime from a
+  single catalog in `public/i18n.js` ([ADR-0011](docs/adr/0011-runtime-ui-translation.md)).
+- Push notifications in each device's language (migration 010 adds the language to every
+  subscription).
+- English sample data in the demo, and English screenshots in the README.
+- `test/i18n.test.js` (13 tests).
+
 ## [3.3.0] — 2026-10-28 · First public release
 
 ### Added
@@ -86,5 +97,6 @@ repository and are summarized here from its history.
 - First version: chores, allowance, rewards and meal plans with accounts, families and email
   invitations.
 
-[Unreleased]: https://github.com/100550169/casa/compare/v3.3.0...HEAD
+[Unreleased]: https://github.com/100550169/casa/compare/v3.4.0...HEAD
+[3.4.0]: https://github.com/100550169/casa/releases/tag/v3.4.0
 [3.3.0]: https://github.com/100550169/casa/releases/tag/v3.3.0
