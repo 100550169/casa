@@ -1,0 +1,5 @@
+# LF line endings in the repository, Windows included.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary

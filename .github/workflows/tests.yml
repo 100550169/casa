@@ -1,0 +1,71 @@
+# Automated tests on every push to main and every pull request (Dependabot's
+# included). Render deploys as soon as something lands on main; this workflow
+# flags anything that breaks a household rule (money, permissions, calendar…).
+#
+# Two jobs:
+#   - logic: `npm test`, no database or network.
+#   - api:   starts the real server against an empty PostgreSQL and runs the
+#            end-to-end suite (test/http/api.js). It catches things the logic
+#            tests cannot see, such as an Express upgrade breaking the routes.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  logic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      # Fails on any high or critical vulnerability in a dependency, even when
+      # nobody touched the code.
+      - run: npm audit --audit-level=high
+
+  api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: prueba
+          POSTGRES_DB: casa
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d casa"
+          --health-interval 2s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgres://postgres:prueba@localhost:5432/casa?sslmode=disable
+      CODIGO_CASA: PRUE-BA12-3456
+      PORT: "3000"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Start the server
+        run: |
+          node server.js > server.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/api/health >/dev/null && { echo "Server ready"; exit 0; }
+            sleep 1
+          done
+          echo "::error::The server did not start"; cat server.log; exit 1
+      - run: npm run test:http
+      - name: Server log
+        if: always()
+        run: cat server.log

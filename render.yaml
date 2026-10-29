@@ -1,0 +1,26 @@
+# Render Blueprint: describes the service so it can be deployed in one click
+# (the "Deploy to Render" button in the README, or Render → New → Blueprint).
+#
+# Step-by-step guide: docs/DEPLOY-ON-RENDER.md
+# Specification: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: casa
+    runtime: node
+    plan: free
+    region: frankfurt          # cannot be changed after creation
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit  # every push to main deploys
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TZ_FAMILIA        # household time zone
+        value: Europe/Madrid
+      # Render asks for these when the Blueprint is created (sync: false = not stored here).
+      - key: DATABASE_URL      # Neon (or any PostgreSQL) connection string
+        sync: false
+      - key: CODIGO_CASA       # the household's access code (strongly recommended)
+        sync: false

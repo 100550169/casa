@@ -1,0 +1,51 @@
+name: Bug report
+description: Something does not work as the documentation says.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Do not paste real household data** (names, deployment address,
+        house code or state backups). For security issues, use Security → Report a
+        vulnerability instead of this form.
+  - type: textarea
+    id: what-happens
+    attributes:
+      label: What happens
+      description: What you expected and what happens instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps. Reproducible in `/demo` is even better.
+      placeholder: |
+        1. Open /demo
+        2. Pick the profile …
+        3. …
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - Phone (child profile)
+        - Desktop (parents' dashboard)
+        - Server / API
+        - Render deployment
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: "Browser and OS (e.g. Safari on iOS 18), Node version for server issues"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Browser console errors or Render → Logs output, without personal data.
+      render: text

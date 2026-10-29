@@ -1,0 +1,30 @@
+name: Feature request
+description: An idea to improve Casa.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: The household situation the app does not cover today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How you imagine it working. Sketches or `/demo` screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Other ways of solving it you have considered.
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked the [roadmap](../blob/main/docs/ROADMAP.md) and it is not already planned.
+          required: true

@@ -1,0 +1,27 @@
+[
+  {
+    "_comment": [
+      "This is ONLY a reference template showing the shape of the file.",
+      "You do NOT need to upload it anywhere or edit it by hand:",
+      "the server generates it at /.well-known/assetlinks.json (see server.js).",
+      "",
+      "All you need to do is set the SHA-256 fingerprint in the server’s",
+      "ANDROID_FINGERPRINT environment variable. Google Play Console provides it",
+      "AFTER the first upload:",
+      "   Play Console -> App integrity -> Play app signing",
+      "",
+      "To check that it works, open in a browser:",
+      "   https://TU-SERVICIO.onrender.com/.well-known/assetlinks.json"
+    ],
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.casa.tareas",
+      "sha256_cert_fingerprints": [
+        "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99"
+      ]
+    }
+  }
+]

@@ -1,0 +1,115 @@
+# Nightly off-server backup (optional).
+#
+# The server already keeps one backup per day in its own database (restorable
+# with one click from the dashboard). This is the other half: if the whole
+# database were ever lost, one copy per day is kept here.
+#
+# Every night it downloads the household's state and stores it in the `backups`
+# branch of this repository:
+#     backups/YYYY-MM-DD.json   one per day
+#     latest.json               always the most recent one
+#
+# ⚠️ PRIVATE REPOSITORIES ONLY. The backup contains the household's real data
+# (names, schedules, points). If the repository is public, the job refuses to
+# run.
+#
+# To enable it (see docs/DEPLOY-ON-RENDER.md, step 7):
+#   GitHub → Settings → Secrets and variables → Actions
+#     - Variable CASA_URL     → https://<your-service>.onrender.com
+#     - Secret   CODIGO_CASA  → the same value as on Render (if you use one)
+# Without the CASA_URL variable the job is skipped and does nothing.
+#
+# Can be run by hand: Actions tab → "Nightly backup" → Run workflow.
+name: Nightly backup
+
+on:
+  schedule:
+    - cron: "30 2 * * *"      # 03:30 in winter, 04:30 in summer (Madrid time)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if: ${{ vars.CASA_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CASA_URL: ${{ vars.CASA_URL }}
+      CODIGO_CASA: ${{ secrets.CODIGO_CASA }}
+    steps:
+      - name: Make sure the repository is private
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          private=$(gh api "repos/${GITHUB_REPOSITORY}" --jq .private)
+          if [ "$private" != "true" ]; then
+            echo "::error::This repository is public: the backup would publish the household's data. Make it private or delete the CASA_URL variable."
+            exit 1
+          fi
+
+      - name: Download the backup
+        run: |
+          set -euo pipefail
+          # Render's free plan sleeps: retry to give it time to wake up (it
+          # can take up to a minute).
+          code=000
+          for i in 1 2 3; do
+            code=$(curl -sS -o backup.json -w '%{http_code}' --max-time 120 \
+              -H "X-Casa: ${CODIGO_CASA}" -H "X-Perfil: papas" \
+              "$CASA_URL/api/backup") || code=000
+            # A 401 is not fixed by retrying (and every attempt counts towards
+            # the brute-force lockout): stop and report it.
+            if [ "$code" = "200" ] || [ "$code" = "401" ]; then break; fi
+            echo "Attempt $i: HTTP $code. Retrying…"
+            sleep 20
+          done
+          if [ "$code" = "401" ]; then
+            echo "::error::The household requires a code and the CODIGO_CASA secret is missing or does not match the one on Render."
+            exit 1
+          fi
+          if [ "$code" != "200" ]; then
+            echo "::error::Could not download the backup (HTTP $code)."
+            exit 1
+          fi
+          # Make sure it really is a household backup and not an error page.
+          node -e "const s=require('./backup.json'); if(!Array.isArray(s.members)||!Array.isArray(s.fixedTasks)) process.exit(1); console.log('Valid backup:', JSON.stringify(s).length, 'bytes')"
+
+      - name: Store it in the backups branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          day=$(TZ=Europe/Madrid date +%F)
+          git init -q backups-repo
+          cd backups-repo
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git fetch -q --depth 1 origin backups; then
+            git checkout -q -b backups FETCH_HEAD
+          else
+            # First run: a new branch with none of the code.
+            git checkout -q --orphan backups
+            printf '%s\n' "# Household backups" "" \
+              "One snapshot of the household's state per day, stored every night by" \
+              "\`.github/workflows/nightly-backup.yml\` (\`main\` branch)." "" \
+              "To restore one: download it and, in the parents' dashboard, go to" \
+              "Economía → Copias de seguridad → «Restaurar desde archivo»." > README.md
+          fi
+          mkdir -p backups
+          cp ../backup.json "backups/$day.json"
+          cp ../backup.json latest.json
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes since the last backup."
+            exit 0
+          fi
+          git -c user.name="nightly-backup" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "backup $day"
+          git push -q origin backups
+          echo "Stored backups/$day.json"

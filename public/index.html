@@ -1,0 +1,2668 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#fff5e9" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Casa · tareas en familia</title>
+<meta name="description" content="Organiza las tareas del hogar en familia: tareas fijas y adicionales, paga, niveles y menús semanales." />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="192x192" href="/iconos/icono-192.png" />
+<!-- iOS ("Añadir a pantalla de inicio"). Los iconos deben ser OPACOS y sin
+     esquinas redondeadas: iOS aplica su propia máscara, y si el PNG tiene
+     transparencia la compone sobre negro o descarta el icono. Se declaran
+     varios tamaños porque iOS elige el que mejor encaje en cada dispositivo. -->
+<link rel="apple-touch-icon" sizes="180x180" href="/iconos/apple-touch-icon.png" />
+<link rel="apple-touch-icon" sizes="167x167" href="/iconos/apple-touch-icon-167.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="/iconos/apple-touch-icon-152.png" />
+<link rel="apple-touch-icon" sizes="120x120" href="/iconos/apple-touch-icon-120.png" />
+<link rel="apple-touch-icon-precomposed" href="/iconos/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="Casa" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  /* ----- Paleta cálida "hogar soleado" ----- */
+  --bg:#fef6ea;          /* crema papel */
+  --bg2:#f5ead8;         /* crema más cálido (inputs, tracks) */
+  --card:#ffffff;        /* tarjetas blancas */
+  --card2:#fdf3e6;       /* relleno suave */
+  --line:#efe1cc;        /* líneas cálidas */
+  --text:#43352a;        /* marrón cálido oscuro */
+  /* Contraste (oct 2026): los textos tienen que leerse a 4,5:1 sobre las
+     tarjetas y el fondo (norma WCAG AA). Antes --dim daba 3,1:1 y --faint
+     2:1: en un móvil al sol no se leían las etiquetas de la barra inferior. */
+  --dim:#766859;         /* texto secundario — 5,0:1 sobre el fondo */
+  --faint:#998d7e;       /* pistas y detalles — 3:1, solo para lo no esencial */
+
+  --accent:#ff7a59;      /* coral alegre: fondos, bordes y marca */
+  --accent-text:#b4563f; /* el coral cuando es LETRA: 4,8:1 sobre blanco */
+  --accent-ink:#43352a;  /* letra SOBRE coral: 4,6:1 (el blanco daba 2,6:1) */
+  --sun:#ffc24b;         /* amarillo sol (solo decorativo) */
+  /* Un tono más oscuros que los originales para que valgan a la vez como
+     letra sobre claro y como fondo con letra blanca (casillas, contadores). */
+  --green:#217b51;       /* verde hoja */
+  --amber:#9e5f20;       /* mandarina tostada */
+  --red:#b14343;         /* rojo */
+  --cyan:#217194;        /* azul */
+  --violet:#715aae;      /* uva */
+
+  --shadow:0 8px 22px rgba(180,120,70,.10), 0 2px 6px rgba(180,120,70,.06);
+  --shadow-lg:0 14px 40px rgba(180,120,70,.16);
+  --r:20px;
+  --num:"Fredoka",ui-rounded,system-ui,sans-serif;
+  font-family:"Nunito",system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);min-height:100vh}
+body{
+  background-image:
+    radial-gradient(520px 320px at 88% -6%, rgba(255,194,75,.22), transparent 60%),
+    radial-gradient(460px 300px at -8% 4%, rgba(255,122,89,.14), transparent 60%),
+    radial-gradient(600px 400px at 50% 108%, rgba(47,159,208,.10), transparent 60%);
+  background-attachment:fixed;
+}
+h1,h2,h3{margin:0;font-family:var(--num);font-weight:600;letter-spacing:-.01em}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;font-size:15px;background:var(--bg2);border:1.5px solid var(--line);color:var(--text);border-radius:12px;padding:11px 13px;width:100%;font-weight:600}
+input:focus,select:focus{outline:none;border-color:var(--accent);background:#fff}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:600}
+.dim{color:var(--dim)} .faint{color:var(--faint)}
+.screen{animation:rise .4s cubic-bezier(.2,.8,.2,1)}
+/* Repintado por sincronización de fondo: nada se vuelve a animar, para que la
+   pantalla no parezca refrescarse sola cada pocos segundos. */
+.screen.quiet,.screen.quiet *{animation:none!important}
+/* Navegando con teclado (o un lector de pantalla) tiene que verse dónde se
+   está. Solo con :focus-visible, para no pintar el contorno al tocar. */
+:focus-visible{outline:3px solid var(--accent-text);outline-offset:2px;border-radius:10px}
+input:focus-visible,select:focus-visible{outline-offset:0}
+/* Quien tiene activado "Reducir movimiento" en el sistema no ve animaciones. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+/* Contador de pendientes en las pestañas: es el "aviso" de la app, ya que no
+   hay notificaciones push. */
+.badge-num{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;
+  border-radius:999px;background:var(--red);color:#fff;font-size:11px;font-weight:800;
+  font-family:var(--num);margin-left:auto;flex:none;line-height:1}
+.nav .badge-num{position:absolute;top:2px;right:50%;transform:translateX(22px);margin:0}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+
+.pill{font-size:11px;padding:5px 11px;border-radius:999px;font-weight:700;display:inline-flex;align-items:center;gap:5px}
+.p-pending{background:#f0e7d8;color:#6f6253}
+.p-wait{background:#fff0d6;color:var(--amber)}
+.p-ok{background:#d9f5e7;color:var(--green)}
+.p-late{background:#fde0e0;color:var(--red)}
+.p-fixed{background:#d9eefa;color:var(--cyan)}
+.p-extra{background:#eae6fb;color:var(--violet)}
+.pts{font-family:var(--num);font-weight:700;color:var(--accent-text)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 17px;border-radius:14px;font-weight:800;font-size:14px;background:#fff;border:1.5px solid var(--line);color:var(--text);transition:transform .12s, box-shadow .15s}
+.btn:hover{box-shadow:var(--shadow)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);box-shadow:0 6px 16px rgba(255,122,89,.32)}
+.btn.primary:hover{box-shadow:0 8px 22px rgba(255,122,89,.42)}
+.btn.sm{padding:8px 13px;font-size:13px;border-radius:11px}
+.btn.ok{background:#d9f5e7;color:var(--green);border-color:#bfead4}
+.btn.ghost{background:transparent;box-shadow:none}
+.btn:active{transform:scale(.96)} .btn:disabled{opacity:.45;cursor:default;box-shadow:none}
+.btn.w{width:100%}
+
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.card.glow{background:linear-gradient(160deg,#ffffff,#fff4e2);border-color:#ffe3bb}
+.row{display:flex;align-items:center;gap:10px} .spacer{flex:1}
+.field{margin-bottom:13px} .field label{font-size:12px;color:var(--dim);display:block;margin-bottom:6px;font-weight:700}
+.sect-title{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:4px 0 10px}
+.empty{text-align:center;color:var(--faint);padding:32px 10px;font-size:14px;font-weight:600}
+.preview-tag{display:inline-block;font-size:11px;font-weight:800;color:var(--violet);background:#eae6fb;padding:3px 9px;border-radius:7px;margin-left:8px}
+.avatar{border-radius:14px;display:grid;place-items:center;font-weight:800;flex:none;font-family:var(--num)}
+.progress{height:11px;background:var(--bg2);border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+.progress>span{display:block;height:100%;border-radius:999px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+
+/* ===== Barra de modo (demo) ===== */
+.modebar{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(254,246,234,.86);backdrop-filter:blur(12px);border-bottom:1.5px solid var(--line);display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;font-weight:700}
+.modebar .seg{display:flex;background:var(--bg2);border:1.5px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.modebar .seg button{padding:6px 13px;border-radius:9px;font-size:12px;color:var(--dim);font-weight:800}
+.modebar .seg button.on{background:var(--accent);color:var(--accent-ink);box-shadow:0 3px 8px rgba(255,122,89,.3)}
+
+/* =========================================================
+   ESCRITORIO (padre)
+   ========================================================= */
+.desk{display:none}
+.desk .wrap{max-width:1240px;margin:0 auto;padding:64px 26px 48px;display:grid;grid-template-columns:230px 1fr;gap:26px}
+.side{position:sticky;top:64px;align-self:start}
+.side .brand{display:flex;align-items:center;gap:11px;margin-bottom:24px;padding:0 4px}
+.side .brand .dot{width:46px;height:46px;border-radius:15px;background:linear-gradient(150deg,var(--accent),var(--sun));display:grid;place-items:center;font-size:22px;box-shadow:0 8px 18px rgba(255,122,89,.3);transform:rotate(-4deg)}
+.side nav{display:flex;flex-direction:column;gap:5px}
+.side nav button{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;color:var(--dim);font-weight:800;font-size:14px;text-align:left;width:100%;transition:.15s}
+.side nav button.on{background:#fff;color:var(--text);box-shadow:var(--shadow);border:1.5px solid var(--line)}
+.side nav button.on svg{stroke:var(--accent)}
+.side nav button:hover:not(.on){color:var(--text);background:rgba(255,255,255,.5)}
+.side nav svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.deskmain h2{font-size:27px;margin-bottom:3px}
+.deskmain .crumb{color:var(--dim);font-size:14px;margin-bottom:24px;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:22px}
+.kpi{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:17px;box-shadow:var(--shadow);border-top:4px solid var(--accent);animation:rise .4s both}
+.kpi:nth-child(1){border-top-color:var(--green)} .kpi:nth-child(2){border-top-color:var(--cyan)}
+.kpi:nth-child(3){border-top-color:var(--sun)} .kpi:nth-child(4){border-top-color:var(--violet)}
+.kpi:nth-child(2){animation-delay:.05s} .kpi:nth-child(3){animation-delay:.1s} .kpi:nth-child(4){animation-delay:.15s}
+.kpi .k{font-size:13px;color:var(--dim);font-weight:700} .kpi .v{font-family:var(--num);font-size:28px;margin-top:6px;font-weight:700} .kpi .v small{font-size:15px;color:var(--dim)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.cols-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-weight:800;padding:9px 10px;border-bottom:2px solid var(--line)}
+td{padding:12px 10px;border-bottom:1px solid var(--line);font-size:14px;font-weight:600}
+tr:last-child td{border-bottom:none}
+.bal{display:flex;gap:18px;align-items:flex-end;height:155px;padding-top:10px}
+.bal .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:9px;height:100%;justify-content:flex-end}
+.bal .bar{width:100%;max-width:56px;border-radius:14px 14px 7px 7px;display:flex;align-items:flex-start;justify-content:center;padding-top:7px;transition:height .6s cubic-bezier(.2,.8,.2,1);box-shadow:inset 0 -6px 12px rgba(0,0,0,.06)}
+.bal .bar .v{font-family:var(--num);font-size:13px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.18)}
+.bal .nm{font-size:13px;color:var(--dim);font-weight:700}
+.task-line{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.task-line:last-child{border:none}
+.tic{width:42px;height:42px;border-radius:13px;background:var(--card2);display:grid;place-items:center;font-size:19px;flex:none;border:1.5px solid var(--line)}
+.chip{font-size:11px;padding:4px 10px;border-radius:9px;background:var(--card2);border:1.5px solid var(--line);color:var(--dim);font-weight:700}
+
+/* ----- Calendario (Dashboard) ----- */
+.ag-grid{width:100%;min-width:760px;border-collapse:separate;border-spacing:6px;table-layout:fixed}
+.ag-grid th{text-align:center;padding:4px 2px;border:none;font-size:12px;color:var(--dim)}
+.ag-grid th.hoy{color:var(--accent-text)}
+.ag-grid th.ag-fr{width:92px;text-align:left;font-size:13px;color:var(--text);text-transform:none;letter-spacing:0;vertical-align:top;padding-top:10px}
+.ag-grid th.ag-fr small{display:block;font-size:11px;color:var(--faint);font-weight:700;margin-top:2px}
+.ag-grid td.ag-cell{vertical-align:top;height:96px;padding:6px;border:1.5px solid var(--line);border-radius:14px;background:var(--card2)}
+.ag-grid td.ag-cell.hoy{border-color:var(--accent);background:#fff8f1}
+/* Tiempo ocupado: rayado, para que se distinga sin depender solo del color. */
+.ag-cell.ocupada,.ag-pick.ocupada{background:repeating-linear-gradient(135deg,#f5ead8 0 7px,#ead9bf 7px 14px)!important}
+.ag-busy{font-size:11px;line-height:1.35;color:var(--dim);font-weight:800;margin-bottom:5px}
+.ag-chip{display:flex;align-items:flex-start;gap:4px;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);
+  border-left:4px solid var(--c);border-radius:9px;padding:5px 5px;font-size:12px;font-weight:700;margin-bottom:4px;line-height:1.2}
+.ag-chip:hover{box-shadow:var(--shadow)}
+.ag-chip .ag-txt{flex:1;min-width:0;overflow-wrap:break-word}
+.ag-chip .ag-txt small{display:block;font-size:11px;color:var(--dim);font-weight:800}
+.ag-chip.hecha{opacity:.55} .ag-chip.hecha .ag-txt{text-decoration:line-through}
+.ag-chip.conflicto{border-color:var(--red);border-left-color:var(--red);background:#fff6f6}
+.ag-warn{color:var(--red)}
+.ag-mini{border-collapse:separate;border-spacing:4px;margin:0 auto}
+.ag-mini th{border:none;padding:2px;font-size:11px;text-align:center;color:var(--dim)}
+.ag-mini td{border:none;padding:0}
+.ag-pick{width:38px;height:38px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-size:14px;color:var(--accent-text);display:grid;place-items:center}
+.ag-pick:hover{border-color:var(--accent)}
+.ag-pick.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.ag-pick.ley{display:inline-grid;width:14px;height:14px;border-radius:4px;font-size:8px;vertical-align:middle;margin-right:3px}
+.ho-dias{display:flex;gap:6px}
+.ho-dias label{flex:1}
+.ho-dias input{display:none}
+.ho-dias span{display:grid;place-items:center;height:40px;border-radius:11px;border:1.5px solid var(--line);background:var(--bg2);font-weight:800;color:var(--dim);cursor:pointer}
+.ho-dias input:checked+span{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+/* =========================================================
+   MÓVIL (hijo)
+   ========================================================= */
+/* ----- Calendario (hijo) ----- */
+.hoy-card{border-color:#ffd9b8;background:linear-gradient(160deg,#fff,#fff6ec)}
+.sem-fr{margin-top:8px}
+.sem-fr-h{font-size:11px;font-weight:800;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.sem-item{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)}
+.sem-item:last-child{border:none}
+.sem-item small{display:block;font-size:12px;color:var(--dim);font-weight:700;margin-top:2px}
+.sem-item.hecha{opacity:.55} .sem-item.hecha b{text-decoration:line-through}
+.sem-ico{width:38px;height:38px;border-radius:11px;background:var(--card2);border:1.5px solid var(--line);display:grid;place-items:center;font-size:18px;flex:none}
+.sem-diarias{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.sem-dia{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:0 15px;margin-bottom:10px;box-shadow:var(--shadow)}
+.sem-dia.hoy{border-color:var(--accent)}
+.sem-dia summary{display:flex;align-items:center;gap:8px;min-height:54px;cursor:pointer;list-style:none}
+.sem-dia summary::-webkit-details-marker{display:none}
+.sem-dia[open]{padding-bottom:12px}
+.sem-d{font-family:var(--num);font-weight:600;font-size:17px}
+.sem-ocup{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.sem-ocup span{font-size:12px;font-weight:700;color:var(--dim);background:var(--bg2);border-radius:8px;padding:4px 8px}
+.mob{display:none}
+.mob .phone{max-width:480px;margin:0 auto;padding:58px 16px 100px;position:relative;min-height:100vh}
+.mob .head{display:flex;align-items:center;gap:13px;margin-bottom:18px}
+.mob .head .avatar{width:48px;height:48px;font-size:20px;box-shadow:var(--shadow)}
+.mob .head h1{font-size:20px} .mob .head .sub{font-size:12px;color:var(--dim);margin-top:2px;font-weight:700}
+.mob .icon-btn{margin-left:auto;width:44px;height:44px;border-radius:14px;background:#fff;border:1.5px solid var(--line);display:grid;place-items:center;box-shadow:var(--shadow)}
+.mob .icon-btn svg{width:22px;height:22px;stroke:var(--dim);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.hero{background:linear-gradient(150deg,#fff,#fff0df 60%,#ffe7ec);border:1.5px solid #ffe1bd;border-radius:24px;padding:21px;margin-bottom:16px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.hero::after{content:"";position:absolute;right:-26px;top:-26px;width:130px;height:130px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,194,75,.45),transparent)}
+.hero::before{content:"☀️";position:absolute;right:16px;top:14px;font-size:26px;opacity:.85}
+.hero .label{font-size:12px;color:var(--dim);font-weight:700} .hero .big{font-family:var(--num);font-size:44px;font-weight:700;margin-top:6px;line-height:1;color:var(--accent-text)}
+.hero .big small{font-size:19px;color:var(--dim)}
+.ring{width:66px;height:66px;border-radius:50%;display:grid;place-items:center;flex:none;background:conic-gradient(var(--accent) calc(var(--pct)*1%), #f1e4d0 0);box-shadow:0 4px 10px rgba(255,122,89,.22)}
+.ring .inner{width:52px;height:52px;border-radius:50%;background:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;font-family:var(--num);color:var(--text)}
+.task{display:flex;align-items:center;gap:13px;background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:14px;margin-bottom:11px;box-shadow:var(--shadow)}
+.task.approved{opacity:.6} .task .tname{font-weight:800} .task .tsub{font-size:12px;color:var(--dim);margin-top:5px}
+.mcard{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:15px;margin-bottom:12px;box-shadow:var(--shadow)}
+.badges{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;text-align:center}
+.badge{aspect-ratio:1;border-radius:17px;background:linear-gradient(155deg,#fff,#fdf1e0);border:1.5px solid var(--line);display:grid;place-items:center;font-size:26px;box-shadow:var(--shadow);animation:pop .4s both}
+.badge:nth-child(2){animation-delay:.04s}.badge:nth-child(3){animation-delay:.08s}.badge:nth-child(4){animation-delay:.12s}
+.badge:nth-child(5){animation-delay:.16s}.badge:nth-child(6){animation-delay:.2s}.badge:nth-child(7){animation-delay:.24s}.badge:nth-child(8){animation-delay:.28s}
+.badge.locked{opacity:.4;filter:grayscale(.7);box-shadow:none} .badge .l{font-size:11px;color:var(--dim);margin-top:3px;font-weight:700}
+.day{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
+.day:last-child{border:none} .day .dn{width:42px;font-size:12px;color:var(--accent-text);font-weight:800;text-transform:uppercase}
+.seg{display:flex;background:var(--bg2);border:1.5px solid var(--line);border-radius:13px;padding:3px;gap:3px}
+.seg button{flex:1;padding:9px;border-radius:10px;font-size:13px;color:var(--dim);font-weight:800}
+.seg button.on{background:var(--accent);color:var(--accent-ink);box-shadow:0 3px 8px rgba(255,122,89,.3)}
+.nav{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);border-top:1.5px solid var(--line);display:flex;padding:9px 6px calc(9px + env(safe-area-inset-bottom));z-index:20;box-shadow:0 -6px 20px rgba(180,120,70,.08)}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;color:var(--dim);font-size:11px;font-weight:800;transition:.15s}
+.nav button.on{color:var(--accent-text)} .nav button.on svg{stroke:var(--accent)} .nav svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Sheet móvil */
+.sheet-bg{position:fixed;inset:0;background:rgba(67,53,42,.4);z-index:30;display:none} .sheet-bg.open{display:block;animation:rise .2s}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:var(--card);border-radius:26px 26px 0 0;border:1.5px solid var(--line);padding:22px 18px calc(24px + env(safe-area-inset-bottom));z-index:31;transform:translateY(100%);transition:.32s cubic-bezier(.2,.8,.2,1);max-height:85vh;overflow:auto;box-shadow:var(--shadow-lg)}
+.sheet.open{transform:none} .sheet .grab{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 18px}
+.sheet h3{font-size:18px}
+
+/* Modal escritorio */
+.modal-bg{position:fixed;inset:0;background:rgba(67,53,42,.45);z-index:40;display:none;place-items:center;padding:20px} .modal-bg.open{display:grid;animation:rise .2s}
+.modal{background:var(--card);border:1.5px solid var(--line);border-radius:22px;padding:26px;width:min(440px,92vw);max-height:88vh;overflow:auto;box-shadow:var(--shadow-lg)}
+.modal h3{font-size:20px}
+
+@media(min-width:861px){ .desk{display:block} }
+@media(max-width:860px){ .mob{display:block} }
+
+/* =========================================================
+   SELECTOR DE PERFIL (¿quién está usando la app?)
+
+   No es una pantalla de acceso: no pide nada, solo pregunta quién eres para
+   abrir tu pantalla. Se dibuja mobile-first porque los tres hijos entran
+   siempre desde el móvil; en pantalla grande se reparte en dos columnas.
+   ========================================================= */
+#picker{display:none}
+.pick-shell{min-height:100vh;display:grid;place-items:center;padding:26px 18px calc(26px + env(safe-area-inset-bottom))}
+.pick-card{width:100%;max-width:440px}
+.pick-brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.pick-brand .dot{width:52px;height:52px;border-radius:17px;background:linear-gradient(150deg,var(--accent),var(--sun));display:grid;place-items:center;font-size:25px;box-shadow:0 8px 18px rgba(255,122,89,.3);transform:rotate(-4deg);flex:none}
+.pick-brand h1{font-size:25px} .pick-brand .sub{font-size:13px;color:var(--dim);font-weight:700;margin-top:2px}
+.pick-list{display:grid;gap:11px}
+/* 64px de alto mínimo: pensado para pulgares, no para ratones. */
+.pick-btn{display:flex;align-items:center;gap:14px;width:100%;min-height:68px;padding:13px 15px;
+  background:var(--card);border:1.5px solid var(--line);border-radius:19px;box-shadow:var(--shadow);
+  text-align:left;transition:transform .12s, box-shadow .15s}
+.pick-btn:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+.pick-btn:active{transform:scale(.985)}
+.pick-btn .av{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;font-size:23px;flex:none}
+.pick-btn .nm{font-family:var(--num);font-weight:600;font-size:18px}
+.pick-btn .rl{font-size:12px;color:var(--dim);font-weight:700;margin-top:2px}
+.pick-btn .go{margin-left:auto;color:var(--faint);font-size:20px;flex:none}
+.pick-btn.papas{background:linear-gradient(150deg,#fff,#f6f2ff);border-color:#e2daf7}
+.pick-sep{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:18px 0 10px}
+.pick-note{font-size:12px;color:var(--faint);font-weight:600;text-align:center;margin-top:22px;line-height:1.5}
+.pick-err{background:#fde0e0;color:var(--red);border:1.5px solid #f7c4c4;border-radius:14px;padding:12px 14px;font-size:13px;font-weight:700;margin-bottom:14px}
+@media(min-width:700px){
+  .pick-card{max-width:760px}
+  .pick-list{grid-template-columns:1fr 1fr}
+  .pick-list.uno{grid-template-columns:1fr}
+}
+
+/* =========================================================
+   AJUSTES MÓVILES (360 / 390 / 430 px)
+
+   La experiencia de los hijos se usa siempre en el móvil, así que en pantallas
+   estrechas se aprieta el margen lateral y se agrandan las zonas pulsables.
+   ========================================================= */
+@media(max-width:430px){
+  .mob .phone{padding-left:13px;padding-right:13px}
+  .mob .head h1{font-size:19px}
+  .btn{padding:13px 17px;min-height:46px}
+  .btn.sm{padding:10px 13px;min-height:40px}
+  .seg button{padding:11px 8px}
+  .nav button{padding:8px 0}
+  .sheet .btn.w{min-height:50px}
+  input,select{padding:13px}
+}
+</style>
+</head>
+<body>
+<div id="picker"></div>
+<div class="modebar" id="modebar"></div>
+<div class="desk" id="desk"></div>
+<div class="mob" id="mob"></div>
+<div class="sheet-bg" id="sheetBg" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet"></div>
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal"></div></div>
+<!-- Los cuatro perfiles de la casa. El mismo archivo lo carga el servidor con
+     require(), para que no haya dos listas que puedan divergir. -->
+<script src="/perfiles.js"></script>
+<script>
+// =========================================================================
+//  HELPER FETCH
+//
+//  Cada petición lleva dos cabeceras:
+//   - X-Casa:   el código de casa. ES la llave: sin él la API no responde.
+//               Llega una vez por enlace y se guarda en este dispositivo.
+//   - X-Perfil: quién usa este móvil. No es una llave: sirve para que el
+//               servidor sepa si quien escribe es un hijo (reporta tareas) o
+//               los papás (validan y cambian los ajustes de la casa).
+// =========================================================================
+function cabecerasApi(extra){
+  return Object.assign({ "X-Perfil": perfilActual() || PERFIL_POR_DEFECTO, "X-Casa": codigoCasa() }, extra||{});
+}
+async function api(url, opts){
+  const o = Object.assign({}, opts||{});
+  o.headers = cabecerasApi(o.headers);
+  if (o.body && typeof o.body !== "string") {
+    o.body = JSON.stringify(o.body);
+    o.headers["Content-Type"] = "application/json";
+  }
+  const r = await fetch(url, o);
+  let data = null;
+  try { data = await r.json(); } catch(e) {}
+  if (!r.ok) {
+    const err = new Error((data && data.error) || ("http_"+r.status));
+    err.status = r.status; err.payload = data;
+    // Sin código (o con uno que ya no vale): se para todo y se pide.
+    if (r.status === 401 && err.message === "codigo_casa") pedirCodigoCasa();
+    throw err;
+  }
+  return data;
+}
+// =========================================================================
+//  ESTADO Y PERSISTENCIA
+// =========================================================================
+let _saveTimer=null, _lastSent=0;
+// Copia del estado tal y como lo entregó el servidor la última vez. Sirve para
+// saber QUÉ he cambiado yo si al guardar resulta que alguien escribió antes.
+let _base=null;
+const marcarBase=()=>{ try{ _base=JSON.parse(JSON.stringify(S)); }catch(e){ _base=null; } };
+
+// Campos que son de este dispositivo y no viajan al servidor.
+const LOCALES=["view","profile","deskTab","mobTab"];
+
+// Fusión por campos: sobre el estado fresco del servidor se vuelven a aplicar
+// los campos que YO había tocado desde mi última lectura.
+// Es una fusión gruesa (por campo de primer nivel), no perfecta: si dos
+// dispositivos tocan el MISMO campo, sigue ganando el último. Pero evita el
+// caso habitual y sangrante: que un hijo marque una tarea y a la vez su padre
+// cambie la paga, y uno de los dos cambios desaparezca sin avisar.
+function fusionarCambios(fresco, mio, base){
+  const salida={...fresco};
+  if(!base) return {...mio, _version:fresco._version};
+  Object.keys(mio).forEach(k=>{
+    if(k==="_version"||LOCALES.includes(k)) return;
+    const yoLoCambie = JSON.stringify(mio[k])!==JSON.stringify(base[k]);
+    if(yoLoCambie) salida[k]=mio[k];
+  });
+  salida._version=fresco._version;
+  return salida;
+}
+
+const Store = {
+  read(){ return null; },
+  write(s){
+    clearTimeout(_saveTimer);
+    _saveTimer=setTimeout(async()=>{
+      _lastSent=Date.now();
+      try{
+        const r=await api("/api/state",{method:"PUT",body:s});
+        S._version=r.version; marcarBase();
+      }catch(e){
+        if(e.status===409 && e.payload && e.payload.error==="version_desfasada"){
+          await resolverConflicto();
+        }else if(e.status!==401){
+          showConn(false);
+        }
+      }
+    },250);
+  },
+};
+
+// Alguien guardó entre que leí y guardé. Se trae el estado fresco, se le
+// vuelven a aplicar mis cambios y se reintenta UNA vez. Si vuelve a fallar,
+// se adopta el del servidor y se avisa: mejor perder un cambio sabiéndolo que
+// perderlo en silencio.
+let _resolviendo=false;
+async function resolverConflicto(){
+  if(_resolviendo) return;
+  _resolviendo=true;
+  try{
+    const fresco=await api("/api/state");
+    const locales={}; LOCALES.forEach(k=>{ locales[k]=S[k]; });
+    const fusionado=fusionarCambios(fresco, S, _base);
+    S=Object.assign(fusionado, locales);
+    ensureShape();
+    const r=await api("/api/state",{method:"PUT",body:S});
+    S._version=r.version; marcarBase();
+    render({quiet:true});
+  }catch(e){
+    try{
+      const fresco=await api("/api/state");
+      const locales={}; LOCALES.forEach(k=>{ locales[k]=S[k]; });
+      S=Object.assign(fresco, locales);
+      ensureShape(); marcarBase(); render({quiet:true});
+      showConn(true);
+      alert("Otro dispositivo guardó al mismo tiempo y tu último cambio no se pudo aplicar. Revísalo, por favor.");
+    }catch(e2){ showConn(false); }
+  }finally{ _resolviendo=false; }
+}
+function showConn(ok){
+  const el=document.getElementById("connDot"); if(!el)return;
+  el.style.background = ok? "var(--green)" : "var(--red)";
+  el.title = ok? "Conectado" : "Sin conexión con el servidor";
+}
+const uid=p=>p+Math.random().toString(36).slice(2,8);
+// Todo lo que venga del estado se pinta con innerHTML: hay que escaparlo SIEMPRE.
+// El estado es compartido dentro de la familia, así que los textos que escribe
+// un miembro acaban en la pantalla de los demás. Se escapa también la comilla
+// simple para que sea seguro dentro de atributos y de onclick="fn('...')".
+const esc=s=>String(s==null?"":s).replace(/[<>&"']/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;","'":"&#39;"}[c]));
+// Color que se inserta dentro de un atributo style: solo se admite hexadecimal.
+const escColor=c=>/^#[0-9a-fA-F]{6}$/.test(String(c||""))?String(c):"#9c8a76";
+const fmt=n=>(Math.round(n*100)/100).toFixed(2);
+const LOAD={normal:1,reducida:.6,minima:.3};
+const LOAD_LABEL={normal:"Normal",reducida:"Reducida",minima:"Mínima"};
+const DAYS=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+const monthName=k=>{const[y,m]=String(k||"").split("-");return ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][+m-1]+" "+y};
+// Las claves de semana y mes las calcula el SERVIDOR (services/tiempo.js) y llegan
+// en S.currentWeek / S.currentMonth. El cliente no las genera nunca.
+// ---- Menús -----------------------------------------------------------------
+// Un plato es {id, name, type, tags} y el menú guarda IDs de plato:
+//   S.menu = { Lun:{desayuno:"d1", comida:"d3", cena:""}, ... }
+// Guardar el id y no el nombre permite renombrar un plato sin romper el menú.
+const MEALS=["desayuno","comida","cena"];
+const MEAL_LABEL={desayuno:"Desayuno",comida:"Comida",cena:"Cena"};
+const PLATO_DESCONOCIDO={id:"",name:"—",type:"comida",tags:[]};
+const dishById=id=>(S.dishes||[]).find(p=>p&&p.id===id)||PLATO_DESCONOCIDO;
+const dishesOfType=t=>(S.dishes||[]).filter(p=>p&&p.type===t);
+const menuAt=(day,meal)=>((S.menu||{})[day]||{})[meal]||"";
+const dishNameAt=(day,meal)=>{const id=menuAt(day,meal); return id?dishById(id).name:""};
+
+const todayIdx=()=>(new Date().getDay()+6)%7; // Lun=0 ... Dom=6
+const DAYLBL=["L","M","X","J","V","S","D"];
+const DIAS_LARGOS=["lunes","martes","miércoles","jueves","viernes","sábado","domingo"];
+const isDaily=t=>t.freq==="daily";
+
+// La semilla vive SOLO en el servidor (services/estadoService.js):
+// tener una copia aqui significaba dos verdades que podian divergir.
+let S = null; // se carga del servidor en bootstrap()
+function ensureShape(){
+  if(!S) return; // el estado aún no ha llegado del servidor
+  // Campos de navegación (son de este dispositivo; el servidor no los manda)
+  if(!S.deskTab) S.deskTab="home";
+  if(!S.mobTab) S.mobTab="home";
+  if(!S.profile) S.profile=perfilActual()||PERFIL_POR_DEFECTO;
+  if(!S.view) S.view=esHijo(S.profile)?"mob":"desk";
+  // Añade campos nuevos a estados guardados antes de tener mercado.
+  if(!Array.isArray(S.listings)) S.listings=[];
+  if(!Array.isArray(S.offers)) S.offers=[];
+  if(!Array.isArray(S.marketLog)) S.marketLog=[];
+  if(Array.isArray(S.extras)) S.extras.forEach(x=>{ if(x.listed===undefined) x.listed=false; });
+  if(Array.isArray(S.fixedTasks)) S.fixedTasks.forEach(t=>{ if(!t.freq) t.freq="daily"; });
+  if(!S.fixedState || typeof S.fixedState!=="object") S.fixedState={};
+
+  // --- Migración de los menús -----------------------------------------------
+  // Las familias antiguas guardaban los platos como texto suelto y el menú
+  // como un plato por día. Ahora un plato es un objeto y cada día tiene
+  // desayuno, comida y cena. Sin esta conversión, esas familias verían
+  // "[object Object]" en el selector de platos.
+  if(!Array.isArray(S.dishes)) S.dishes=[];
+  S.dishes=S.dishes.map((p,i)=> (p && typeof p==="object")
+    ? {id:p.id||("d"+i), name:p.name||"", type:MEALS.includes(p.type)?p.type:"comida", tags:Array.isArray(p.tags)?p.tags:[]}
+    : {id:"d"+i, name:String(p), type:"comida", tags:[]}
+  ).filter(p=>p.name);
+  if(!S.menu || typeof S.menu!=="object") S.menu={};
+  DAYS.forEach(d=>{
+    const v=S.menu[d];
+    if(v && typeof v==="object"){
+      MEALS.forEach(m=>{ if(typeof v[m]!=="string") v[m]=""; });
+    }else{
+      // Antes era el nombre de un plato: se busca su id y se pone como comida.
+      const encontrado=S.dishes.find(p=>p.name===v);
+      S.menu[d]={desayuno:"", comida:encontrado?encontrado.id:"", cena:""};
+    }
+  });
+
+  delete S.swaps; delete S.fixedInstances;
+}
+
+// ---- Reinicios de ciclo --------------------------------------------------
+// El reinicio semanal y el mensual los decide EL SERVIDOR con su propio reloj
+// (ver aplicarCiclos en routes/state.js). Antes los disparaba el reloj del
+// dispositivo: bastaba con que un móvil tuviera la fecha mal puesta para
+// reiniciar la semana o el mes de toda la familia. El cliente solo lee
+// S.currentWeek / S.currentMonth; nunca los cambia.
+const save=()=>Store.write(S);
+const $=id=>document.getElementById(id);
+const children=()=>S.members.filter(m=>m.role==="child");
+const member=id=>S.members.find(m=>m.id===id);
+
+// =========================================================================
+//  MOTOR
+// =========================================================================
+function generateMonth(){
+  // Repartir de nuevo borra el progreso y las validaciones del reparto anterior.
+  if(S.generated && !confirm("Volver a repartir borrará el reparto actual, lo que tus hijos ya hayan marcado y los anuncios del mercado. ¿Continuar?")) return;
+  // Fijas: una instancia por hijo (mismas tareas para todos)
+  initFixedWeek();
+  // El mercado se refiere a asignaciones que van a desaparecer: se cierra entero.
+  S.listings.forEach(l=>{ if(l.status==="open") l.status="cancelled"; });
+  S.offers.forEach(o=>{ if(o.status==="pending") o.status="rejected"; });
+  // Adicionales: repartir por peso según disponibilidad
+  const kids=children();
+  const sumF=kids.reduce((s,c)=>s+LOAD[c.load],0)||1;
+  const total=S.extraTasks.reduce((s,t)=>s+t.points,0);
+  const bins=kids.map(c=>({id:c.id,target:(total*LOAD[c.load])/sumF,load:0}));
+  const ordered=[...S.extraTasks].sort((a,b)=>b.points-a.points);
+  S.extras=[];
+  for(const t of ordered){
+    bins.sort((a,b)=>(b.target-b.load)-(a.target-a.load));
+    bins[0].load+=t.points;
+    S.extras.push({id:uid("x"),taskId:t.id,memberId:bins[0].id,status:"pending"});
+  }
+  S.generated=true; save();
+}
+
+const fixedTask=id=>S.fixedTasks.find(t=>t.id===id);
+const fixedStateOf=(childId,taskId)=>(S.fixedState[childId]||{})[taskId];
+function fixedUnits(t){ return isDaily(t)?7:1; }
+function initFixedWeek(){
+  S.fixedState={};
+  children().forEach(c=>{ S.fixedState[c.id]={};
+    S.fixedTasks.forEach(t=>{ S.fixedState[c.id][t.id]= isDaily(t)?{days:[false,false,false,false,false,false,false]}:{status:"pending"}; });
+  });
+}
+// Asegura que fixedState tiene forma correcta (nuevos hijos/tareas/cambios de frecuencia)
+// Rellena las casillas que falten. Devuelve si ha cambiado algo, para poder
+// guardarlo: una mutación local que no se guarda hace que el sondeo vea siempre
+// diferencia con el servidor y repinte la pantalla cada 4 segundos.
+// El servidor ya entrega el estado con forma completa; esto es red de seguridad.
+function ensureFixedShape(){
+  let cambio=false;
+  if(!S.fixedState){ S.fixedState={}; cambio=true; }
+  children().forEach(c=>{
+    if(!S.fixedState[c.id]){ S.fixedState[c.id]={}; cambio=true; }
+    S.fixedTasks.forEach(t=>{
+      const cur=S.fixedState[c.id][t.id];
+      if(!cur || isDaily(t)!==Array.isArray(cur.days)){
+        S.fixedState[c.id][t.id]= isDaily(t)?{days:[false,false,false,false,false,false,false]}:{status:"pending"};
+        cambio=true;
+      }
+    });
+  });
+  return cambio;
+}
+function fixedApprovedUnits(childId){
+  let n=0;
+  S.fixedTasks.forEach(t=>{ const st=fixedStateOf(childId,t.id); if(!st)return;
+    if(isDaily(t)) n+=(st.days||[]).filter(Boolean).length; else n+=(st.status==="approved")?1:0; });
+  return n;
+}
+function fixedTotalUnits(childId){ return S.fixedTasks.reduce((s,t)=>s+fixedUnits(t),0); }
+const extraTask=id=>S.extraTasks.find(t=>t.id===id);
+
+function fixedRatio(childId){
+  const tot=fixedTotalUnits(childId); if(!tot) return 1;
+  return fixedApprovedUnits(childId)/tot;
+}
+function extraPointsApproved(childId){
+  return S.extras.filter(x=>x.memberId===childId&&x.status==="approved")
+    .reduce((s,x)=>s+extraTask(x.taskId).points,0);
+}
+function extraPointsAssigned(childId){
+  return S.extras.filter(x=>x.memberId===childId).reduce((s,x)=>s+extraTask(x.taskId).points,0);
+}
+// Puntos del mes (para nivel) = fijas aprobadas (10pts c/u) + adicionales aprobadas
+function monthPoints(childId){
+  return Math.max(0, fixedApprovedUnits(childId)*2 + extraPointsApproved(childId) + marketBountyNet(childId));
+}
+// Neto de PUNTOS por primas del mercado, solo de tareas ya APROBADAS.
+// (afecta al nivel/premios; el dinero va por el esfuerzo de la tarea hecha)
+function marketBountyNet(childId){
+  let net=0;
+  S.extras.filter(x=>x.status==="approved"&&x.bounty).forEach(x=>{
+    if(x.bounty.to===childId) net+=x.bounty.points;
+    if(x.bounty.from===childId) net-=x.bounty.points;
+  });
+  return net;
+}
+function money(childId){
+  const ratio=fixedRatio(childId);
+  const fixedEarned=ratio>=0.75?S.fixedPay:0;
+  const canExtra=ratio>=1;
+  const extraEarned=canExtra?extraPointsApproved(childId)*S.rate:0;
+  return {ratio,fixedEarned,extraEarned,total:Math.max(0,fixedEarned+extraEarned),canExtra};
+}
+function levelOf(childId){ const p=monthPoints(childId); return {level:Math.floor(p/100)+1,into:p%100,points:p}; }
+
+// ---- Premios y canjes ------------------------------------------------------
+// Los puntos de una solicitud quedan RESERVADOS en cuanto se pide, aunque el
+// padre aún no la haya aprobado. Si no, un hijo podría pedir tres premios con
+// los puntos justos para uno.
+const redemptions=()=>Array.isArray(S.redemptions)?S.redemptions:(S.redemptions=[]);
+const rewardById=id=>(S.rewards||[]).find(r=>r.id===id)||{id:"",title:"(premio eliminado)",cost:0,type:"",stock:null,active:false};
+function pointsCommitted(childId){
+  return redemptions()
+    .filter(c=>c.childId===childId && (c.status==="pending"||c.status==="approved"))
+    .reduce((s,c)=>s+(c.cost||0),0);
+}
+// Lo que le queda de verdad para gastar.
+function pointsAvailable(childId){
+  return Math.max(0, monthPoints(childId) - pointsCommitted(childId));
+}
+const pendingRedemptions=()=>redemptions().filter(c=>c.status==="pending");
+// ¿Quedan unidades de este premio? stock null = ilimitado.
+function rewardStockLeft(r){
+  if(r.stock==null) return Infinity;
+  const usados=redemptions().filter(c=>c.rewardId===r.id && c.status==="approved").length;
+  return Math.max(0, r.stock-usados);
+}
+function rewardAvailable(r){ return r.active!==false && rewardStockLeft(r)>0; }
+
+// ---- Calendario ------------------------------------------------------------
+// Los papás deciden en qué día y franja hace cada uno sus tareas, encajándolas
+// en los huecos que dejan el colegio, los entrenamientos, etc.
+//
+//   S.horarios = { mateo:[{id,label,days:[0..6],ini:"HH:MM",fin:"HH:MM"}], ... }
+//   S.agenda   = [{kind:"fixed",taskId,childId,day,slot}, {kind:"extra",taskId,day,slot}]
+//
+// La agenda es una PLANTILLA: vale para todas las semanas hasta que se cambie.
+// Las adicionales no guardan hijo: lo saca de la asignación del mes, así que la
+// entrada sobrevive al reparto mensual y sigue a la tarea si cambia de dueño en
+// el mercado.
+//
+// OJO: aquí nada muta S.horarios ni S.agenda al LEER. Las casas antiguas que no
+// los tienen los reciben ya rellenos del servidor (normalizarCalendario); si el
+// cliente los rellenara en local sin guardar, el sondeo vería diferencia en cada
+// vuelta y volvería el bucle de repintado.
+// La mañana empieza a las 9 a propósito: si empezara a las 7, la hora antes del
+// colegio contaría como "libre" y se acabarían colocando tareas un lunes a las 7.
+const FRANJAS=[
+  {id:"manana",label:"Mañana",ini:"09:00",fin:"14:00",ico:"🌅"},
+  {id:"tarde", label:"Tarde", ini:"14:00",fin:"20:00",ico:"☀️"},
+  {id:"noche", label:"Noche", ini:"20:00",fin:"23:00",ico:"🌙"},
+];
+// Una franja cuenta como libre si le quedan al menos estos minutos sin ocupar.
+const MIN_LIBRE=45;
+// Al repartir se prefiere la tarde: por la mañana suele haber colegio.
+const PREFERENCIA_FRANJA={tarde:0,noche:1,manana:2};
+const franjaById=id=>FRANJAS.find(f=>f.id===id)||FRANJAS[0];
+const minutos=h=>{const [a,b]=String(h||"0:0").split(":").map(Number); return (a||0)*60+(b||0);};
+const agenda=()=>Array.isArray(S.agenda)?S.agenda:[];
+const horariosDe=childId=>((S.horarios||{})[childId])||[];
+const claveAgenda=e=>e.kind+"|"+e.taskId+"|"+(e.kind==="fixed"?e.childId:"");
+
+function bloquesDe(childId,day){ return horariosDe(childId).filter(b=>(b.days||[]).includes(day)); }
+// Bloques que pisan (aunque sea en parte) una franja.
+function bloquesEnFranja(childId,day,slot){
+  const f=franjaById(slot), i=minutos(f.ini), e=minutos(f.fin);
+  return bloquesDe(childId,day).filter(b=>minutos(b.ini)<e && minutos(b.fin)>i);
+}
+// Minutos sin ocupar dentro de una franja. Los bloques que se solapan entre sí
+// se cuentan una sola vez (colegio hasta las 14:30 + comedor hasta las 15:00).
+function minutosLibres(childId,day,slot){
+  const f=franjaById(slot), i=minutos(f.ini), e=minutos(f.fin);
+  const tramos=bloquesDe(childId,day)
+    .map(b=>[Math.max(i,minutos(b.ini)),Math.min(e,minutos(b.fin))])
+    .filter(([a,b])=>b>a).sort((x,y)=>x[0]-y[0]);
+  let ocupado=0, hasta=i;
+  tramos.forEach(([a,b])=>{ if(b<=hasta) return; ocupado+=b-Math.max(a,hasta); hasta=b; });
+  return (e-i)-ocupado;
+}
+const franjaLibre=(childId,day,slot)=>minutosLibres(childId,day,slot)>=MIN_LIBRE;
+
+// Quién hace una entrada: en las fijas, el hijo apuntado; en las adicionales,
+// quien la tenga asignada este mes.
+function asignacionExtra(taskId){ return (S.extras||[]).find(x=>x.taskId===taskId); }
+function hijoDeEntrada(e){
+  if(e.kind==="fixed") return e.childId;
+  const x=asignacionExtra(e.taskId); return x?x.memberId:null;
+}
+
+// Entradas de la agenda listas para pintar. Las que ya no casan (tarea borrada,
+// adicional sin repartir este mes…) se ignoran sin borrarlas: las limpia el
+// servidor al guardar.
+function itemsAgenda(){
+  return agenda().map(e=>{
+    const tarea=e.kind==="fixed"?fixedTask(e.taskId):extraTask(e.taskId);
+    if(!tarea || (e.kind==="fixed" && isDaily(tarea))) return null;
+    const hijo=hijoDeEntrada(e);
+    if(!hijo || !member(hijo)) return null;
+    const x=e.kind==="extra"?asignacionExtra(e.taskId):null;
+    const estado=e.kind==="fixed"?((fixedStateOf(hijo,e.taskId)||{}).status||"pending"):x.status;
+    return {e, clave:claveAgenda(e), tarea, hijo, estado,
+      listed:!!(x&&x.listed), hecha:estado==="approved",
+      conflicto:!franjaLibre(hijo,e.day,e.slot)};
+  }).filter(Boolean);
+}
+
+// Lo que todavía no tiene día: cada fija semanal de cada hijo y cada adicional
+// repartida este mes.
+function sinColocar(){
+  const puestas=new Set(agenda().map(claveAgenda));
+  const r=[];
+  children().forEach(c=>(S.fixedTasks||[]).filter(t=>!isDaily(t)).forEach(t=>{
+    const e={kind:"fixed",taskId:t.id,childId:c.id};
+    if(!puestas.has(claveAgenda(e))) r.push({e,tarea:t,hijo:c.id});
+  }));
+  (S.extras||[]).forEach(x=>{
+    const t=extraTask(x.taskId); if(!t) return;
+    const e={kind:"extra",taskId:x.taskId};
+    const k=claveAgenda(e);
+    if(!puestas.has(k)){ puestas.add(k); r.push({e,tarea:t,hijo:x.memberId}); }
+  });
+  return r;
+}
+
+// Propuesta de reparto. Determinista (sin azar) para que sea predecible:
+//   - solo coloca lo que falta; respeta lo que los papás ya movieron a mano,
+//   - primero las adicionales más pesadas, luego las fijas semanales,
+//   - nunca en una franja ocupada,
+//   - de entre las libres elige, por este orden: el día en que ese hijo tenga
+//     menos tareas, la franja menos cargada de la casa, entre semana antes que
+//     el finde, y la tarde antes que la noche o la mañana.
+// Devuelve la agenda nueva y lo que no ha cabido. No guarda nada.
+function planificarSemana(){
+  const pendientes=sinColocar().sort((a,b)=>
+    (b.e.kind==="extra"?b.tarea.points:0)-(a.e.kind==="extra"?a.tarea.points:0));
+  const nueva=agenda().map(e=>({...e}));
+  const sinHueco=[];
+  const menor=(a,b)=>{ for(let i=0;i<a.length;i++){ if(a[i]!==b[i]) return a[i]<b[i]; } return false; };
+  pendientes.forEach(p=>{
+    let mejor=null;
+    for(let d=0;d<7;d++) for(const f of FRANJAS){
+      if(!franjaLibre(p.hijo,d,f.id)) continue;
+      const peso=[
+        nueva.filter(e=>e.day===d && hijoDeEntrada(e)===p.hijo).length,
+        nueva.filter(e=>e.day===d && e.slot===f.id).length,
+        d>=5?1:0,
+        PREFERENCIA_FRANJA[f.id],
+      ];
+      if(!mejor || menor(peso,mejor.peso)) mejor={day:d,slot:f.id,peso};
+    }
+    if(mejor) nueva.push({...p.e, day:mejor.day, slot:mejor.slot});
+    else sinHueco.push(p);
+  });
+  return {agenda:nueva, colocadas:pendientes.length-sinHueco.length, sinHueco};
+}
+
+// "L–V" para días seguidos, "M, J" para sueltos.
+function diasTexto(days){
+  const d=[...(days||[])].sort((a,b)=>a-b);
+  if(d.length>=3 && d[d.length-1]-d[0]===d.length-1) return DAYLBL[d[0]]+"–"+DAYLBL[d[d.length-1]];
+  return d.map(i=>DAYLBL[i]).join(", ");
+}
+const textoBloque=b=>b.label+" "+b.ini+"–"+b.fin;
+// Igual, pero recortado a una franja: en la tarde, "Colegio hasta 14:30" se
+// entiende mejor que "Colegio 08:00–14:30", que parece ocupar toda la tarde.
+function textoBloqueEn(b,slot){
+  const f=franjaById(slot);
+  const antes=minutos(b.ini)<=minutos(f.ini), despues=minutos(b.fin)>=minutos(f.fin);
+  if(antes && despues) return b.label;
+  if(antes) return b.label+" hasta "+b.fin;
+  if(despues) return b.label+" desde "+b.ini;
+  return textoBloque(b);
+}
+
+// =========================================================================
+//  ACCIONES
+// =========================================================================
+function setFixedStatus(childId,taskId,st){ const cur=fixedStateOf(childId,taskId); if(cur&&!cur.days){ cur.status=st; save(); render(); } }
+function toggleFixedDay(childId,taskId,dayIdx){ const cur=fixedStateOf(childId,taskId); if(cur&&cur.days){ cur.days[dayIdx]=!cur.days[dayIdx]; save(); render(); } }
+function setFixedFreq(taskId,freq){ const t=fixedTask(taskId); if(t){ t.freq=freq; ensureFixedShape(); save(); render(); } }
+function setExtraStatus(id,st){ const x=S.extras.find(e=>e.id===id); if(x){x.status=st;save();render()} }
+// ===================== MERCADO DE TAREAS =====================
+function listingOf(assignmentId){ return S.listings.find(l=>l.assignmentId===assignmentId && l.status==="open"); }
+// ¿Ya he pedido yo este anuncio y estoy esperando respuesta?
+function yaPedida(listingId){
+  return (S.offers||[]).some(o=>o.listingId===listingId && o.bidderId===S.profile && o.status==="pending");
+}
+function offersForListing(listingId){ return S.offers.filter(o=>o.listingId===listingId && o.status==="pending"); }
+
+// Publicar una tarea adicional propia en el mercado.
+function publishListing(assignmentId){
+  const pts = Math.max(0, parseInt(($("plPoints")||{}).value,10) || 0);
+  const trade = ($("plTrade")||{}).checked;
+  const note = (($("plNote")||{}).value || "").trim();
+  if(pts<=0 && !trade){ alert("Ofrece puntos o permite trueque (o ambos)."); return; }
+  const x=S.extras.find(e=>e.id===assignmentId);
+  if(!x || x.status!=="pending" || x.listed) return;
+  S.listings.push({id:uid("l"), sellerId:x.memberId, assignmentId, taskId:x.taskId,
+    pointsOffered:pts, acceptsTrade:!!trade, note, status:"open", createdAt:Date.now()});
+  x.listed=true; save(); closeSheet(); render();
+}
+function cancelListing(listingId){
+  const l=S.listings.find(x=>x.id===listingId); if(!l||l.status!=="open")return;
+  l.status="cancelled";
+  S.offers.filter(o=>o.listingId===listingId&&o.status==="pending").forEach(o=>o.status="rejected");
+  const x=S.extras.find(e=>e.id===l.assignmentId); if(x)x.listed=false;
+  save(); render();
+}
+// "Me la quedo": cierre directo por los puntos ofrecidos.
+// "Me la quedo" ya NO cierra el trato de golpe: crea una solicitud que el
+// vendedor tiene que aceptar, igual que el trueque. Antes un hermano podía
+// quedarse la tarea de otro sin que este se enterara hasta después, y el
+// vendedor no podía echarse atrás aunque hubiera puesto mal el precio.
+function takeListing(listingId, bidderId){
+  const l=S.listings.find(x=>x.id===listingId); if(!l||l.status!=="open"||bidderId===l.sellerId)return;
+  const x=S.extras.find(e=>e.id===l.assignmentId); if(!x||x.status!=="pending")return;
+  // Si ya había pedido esta misma tarea, no se duplica
+  if(S.offers.some(o=>o.listingId===listingId&&o.bidderId===bidderId&&o.status==="pending")){
+    alert("Ya has pedido esta tarea. Espera a que te responda."); closeSheet(); return;
+  }
+  S.offers.push({id:uid("o"), listingId, bidderId, kind:"take",
+    offeredAssignmentId:"", offeredTaskId:"", pointsAsked:0,
+    status:"pending", createdAt:Date.now()});
+  save(); closeSheet(); render();
+}
+// Ofrecer un trueque: una de mis tareas a cambio (+ puntos opcionales que pido).
+function submitTradeOffer(listingId, bidderId){
+  const offeredId = ($("toTask")||{}).value;
+  const pts = Math.max(0, parseInt(($("toPoints")||{}).value,10) || 0);
+  const l=S.listings.find(x=>x.id===listingId); if(!l||l.status!=="open"||!l.acceptsTrade)return;
+  const off=S.extras.find(e=>e.id===offeredId);
+  if(!off || off.memberId!==bidderId || off.status!=="pending" || off.listed){ alert("Elige una tarea válida tuya."); return; }
+  S.offers.push({id:uid("o"), listingId, bidderId, offeredAssignmentId:offeredId, offeredTaskId:off.taskId,
+    pointsAsked:pts, status:"pending", createdAt:Date.now()});
+  save(); closeSheet(); render();
+}
+function rejectOffer(offerId){ const o=S.offers.find(x=>x.id===offerId); if(o&&o.status==="pending"){o.status="rejected";save();render()} }
+// El vendedor acepta un trueque: se intercambian las tareas (+ compensación en puntos).
+// El vendedor acepta. Vale para los dos tipos de solicitud:
+//   take  -> el otro se queda la tarea; si el vendedor ofrecía puntos, se los paga
+//   trade -> se intercambian las dos tareas (+ compensación opcional)
+function acceptOffer(offerId){
+  const o=S.offers.find(x=>x.id===offerId); if(!o||o.status!=="pending")return;
+  const l=S.listings.find(x=>x.id===o.listingId); if(!l||l.status!=="open")return;
+  const sellerTask=S.extras.find(e=>e.id===l.assignmentId);
+  if(!sellerTask||sellerTask.status!=="pending"){
+    alert("Esa tarea ya no está disponible."); o.status="rejected"; save(); render(); return;
+  }
+
+  if(o.kind==="take"){
+    sellerTask.memberId=o.bidderId; sellerTask.listed=false;
+    if(l.pointsOffered>0) sellerTask.bounty={points:l.pointsOffered, from:l.sellerId, to:o.bidderId};
+    S.marketLog.push({kind:"take", taskId:l.taskId, from:l.sellerId, to:o.bidderId, points:l.pointsOffered, at:Date.now()});
+  }else{
+    const bidderTask=S.extras.find(e=>e.id===o.offeredAssignmentId);
+    if(!bidderTask||bidderTask.status!=="pending"){
+      alert("La tarea que te ofrecían ya no está disponible."); o.status="rejected"; save(); render(); return;
+    }
+    sellerTask.memberId=o.bidderId; sellerTask.listed=false;
+    bidderTask.memberId=l.sellerId;
+    if(o.pointsAsked>0) sellerTask.bounty={points:o.pointsAsked, from:l.sellerId, to:o.bidderId};
+    S.marketLog.push({kind:"trade", taskId:l.taskId, giveTaskId:o.offeredTaskId, from:l.sellerId, to:o.bidderId, points:o.pointsAsked, at:Date.now()});
+  }
+
+  o.status="accepted";
+  l.status="closed";
+  // El resto de solicitudes sobre ese anuncio se caen
+  S.offers.filter(x=>x.listingId===l.id&&x.status==="pending").forEach(x=>x.status="rejected");
+  save(); render();
+}
+// La vista, el perfil y la pestaña abierta son de ESTE dispositivo: no se
+// mandan al servidor. Si se guardaran, cambiar de pestaña escribiría en el
+// estado compartido y le saltaría la sección abierta a los demás.
+const TAB_KEY="casa_tabs_v1";
+function recordarPestanas(){
+  try{ localStorage.setItem(TAB_KEY,JSON.stringify({deskTab:S.deskTab,mobTab:S.mobTab})); }catch(e){}
+}
+function restaurarPestanas(){
+  try{
+    const t=JSON.parse(localStorage.getItem(TAB_KEY)||"null");
+    if(t){ if(t.deskTab) S.deskTab=t.deskTab; if(t.mobTab) S.mobTab=t.mobTab; }
+  }catch(e){}
+}
+function setView(v){ S.view=v; render() }
+function setProfile(p){ S.profile=p; S.deskTab="home"; S.mobTab="home"; recordarPestanas(); closeSheet(); render() }
+function setDeskTab(t){ S.deskTab=t; recordarPestanas(); if(t==="econ") cargarInfoCasa(true); render() }
+function setMobTab(t){ S.mobTab=t; recordarPestanas(); render() }
+function setLoad(id,v){ member(id).load=v; save(); render() }
+function setMenu(day,meal,dishId){
+  if(!S.menu[day] || typeof S.menu[day]!=="object") S.menu[day]={};
+  S.menu[day][meal]=dishId||"";
+  save(); render();
+}
+function regenMenu(){
+  DAYS.forEach(day=>{
+    S.menu[day]=S.menu[day]&&typeof S.menu[day]==="object"?S.menu[day]:{};
+    MEALS.forEach(m=>{
+      const lista=dishesOfType(m);
+      S.menu[day][m]=lista.length?lista[Math.floor(Math.random()*lista.length)].id:"";
+    });
+  });
+  save(); render();
+}
+function saveEcon(){ S.rate=parseFloat($("ecRate").value)||S.rate; S.fixedPay=parseFloat($("ecFixed").value)||S.fixedPay; save(); closeModal(); render() }
+function addFixed(){ const n=$("ftName").value.trim(); if(!n)return; const freq=($("ftFreq")||{}).value||"daily"; S.fixedTasks.push({id:uid("f"),name:n,icon:$("ftIcon").value,freq}); ensureFixedShape(); save();closeModal();closeSheet();render() }
+function addExtra(){ const n=$("etName").value.trim(); const p=parseInt($("etPts").value,10); if(!n||!p)return; S.extraTasks.push({id:uid("e"),name:n,points:p,icon:$("etIcon").value}); save();closeModal();closeSheet();render() }
+function delFixed(id){ S.fixedTasks=S.fixedTasks.filter(t=>t.id!==id); save();render() }
+function delExtra(id){ S.extraTasks=S.extraTasks.filter(t=>t.id!==id); save();render() }
+function addDish(){
+  const n=$("dishName").value.trim(); if(!n)return;
+  const tipo=($("dishType")||{}).value||"comida";
+  S.dishes.push({id:uid("d"), name:n, type:MEALS.includes(tipo)?tipo:"comida", tags:[]});
+  save();closeModal();closeSheet();render();
+}
+// Al borrar un plato hay que quitarlo también del menú: si no, los días que lo
+// tuvieran apuntarían a un id que ya no existe.
+function delDish(id){
+  const p=dishById(id); if(!p.id) return;
+  if(!confirm('¿Borrar "'+p.name+'" de la base de platos?')) return;
+  S.dishes=S.dishes.filter(x=>x.id!==id);
+  DAYS.forEach(d=>MEALS.forEach(m=>{ if(menuAt(d,m)===id) S.menu[d][m]=""; }));
+  save();render();
+}
+// "Mateo, Pablo y Sara": los nombres salen de perfiles.js, nunca escritos a mano.
+function nombresHijos(){
+  const n=HIJOS.map(h=>h.name);
+  return n.length>1?n.slice(0,-1).join(", ")+" y "+n[n.length-1]:n.join("");
+}
+async function resetAll(){
+  if(!confirm("Esto reiniciará TODOS los datos de la casa: tareas, puntos, premios e historial. Los perfiles de "+nombresHijos()+" se quedan.\n\nAntes se guarda una copia: se puede deshacer desde «Copias de seguridad». ¿Continuar?")) return;
+  try{
+    await api("/api/reset",{method:"POST"});
+    await recargarEstado();
+  }catch(e){ if(e.status!==401) alert("No se pudo reiniciar. Inténtalo de nuevo."); }
+}
+
+// ---- Calendario: acciones de los papás ---------------------------------------
+// Pone (o mueve) una tarea en un día y franja. Si el hijo tiene algo a esa
+// hora se avisa, pero se deja: los papás conocen excepciones que la app no.
+function colocarEnAgenda(kind,taskId,childId,day,slot){
+  const e=kind==="fixed"?{kind,taskId,childId,day,slot}:{kind,taskId,day,slot};
+  const hijo=hijoDeEntrada(e);
+  if(hijo && !franjaLibre(hijo,day,slot)){
+    const motivo=bloquesEnFranja(hijo,day,slot).map(textoBloque).join(", ");
+    const nombre=(member(hijo)||{}).name||"";
+    if(!confirm(nombre+" tiene ocupado "+DAYS[day]+" por la "+franjaById(slot).label.toLowerCase()+
+      (motivo?" ("+motivo+")":"")+". ¿Colocarla ahí igualmente?")) return;
+  }
+  const k=claveAgenda(e);
+  S.agenda=agenda().filter(x=>claveAgenda(x)!==k).concat([e]);
+  save(); closeModal(); render();
+}
+function quitarDeAgenda(kind,taskId,childId){
+  const k=claveAgenda({kind,taskId,childId});
+  S.agenda=agenda().filter(x=>claveAgenda(x)!==k);
+  save(); closeModal(); render();
+}
+function vaciarAgenda(){
+  if(!agenda().length) return;
+  if(!confirm("¿Quitar todas las tareas del calendario? Los horarios se quedan.")) return;
+  S.agenda=[]; save(); render();
+}
+function organizarSemana(){
+  const r=planificarSemana();
+  if(!r.colocadas && !r.sinHueco.length){ openModal(`<h3 style="margin-bottom:10px">Todo colocado</h3>
+    <p class="dim" style="font-size:14px">Todas las tareas ya tienen día. Para empezar de cero, usa <b>Vaciar</b>.</p>
+    <button class="btn primary w" style="margin-top:16px" onclick="closeModal()">Vale</button>`); return; }
+  S.agenda=r.agenda; save(); render();
+  openModal(`<h3 style="margin-bottom:10px">🪄 Semana organizada</h3>
+    <p style="font-size:14px;margin-bottom:12px"><b>${r.colocadas}</b> tarea(s) colocadas en huecos libres.</p>
+    ${r.sinHueco.length?`<div class="mcard" style="border-color:var(--amber)">
+      <b style="color:var(--amber)">Sin hueco (${r.sinHueco.length})</b>
+      <p class="dim" style="font-size:12px;margin:4px 0 8px">Su hijo no tiene ninguna franja libre. Revisa sus horarios o colócalas a mano.</p>
+      ${r.sinHueco.map(p=>`<div style="font-size:13px;padding:3px 0">${esc(p.tarea.icon)} ${esc(p.tarea.name)} · <b>${esc((member(p.hijo)||{}).name||"")}</b></div>`).join("")}
+    </div>`:""}
+    <p class="dim" style="font-size:12px;margin-top:12px">Puedes mover cualquier tarea pulsando sobre ella.</p>
+    <button class="btn primary w" style="margin-top:14px" onclick="closeModal()">Vale</button>`);
+}
+function addHorario(childId){
+  const label=($("hoLabel").value||"").trim();
+  const days=[...document.querySelectorAll("#hoDias input:checked")].map(i=>+i.value);
+  const ini=$("hoIni").value, fin=$("hoFin").value;
+  const err=$("hoErr");
+  if(!label){ err.textContent="Ponle un nombre (Colegio, Fútbol…)."; return; }
+  if(!days.length){ err.textContent="Marca al menos un día."; return; }
+  if(!ini || !fin || ini>=fin){ err.textContent="La hora de fin tiene que ser posterior a la de inicio."; return; }
+  if(!S.horarios) S.horarios={};
+  S.horarios[childId]=horariosDe(childId).concat([{id:uid("h"),label,days,ini,fin}]);
+  save(); closeModal(); render();
+}
+function delHorario(childId,id){
+  const b=horariosDe(childId).find(x=>x.id===id); if(!b) return;
+  if(!confirm('¿Borrar "'+b.label+'" del horario de '+((member(childId)||{}).name||"")+'?')) return;
+  S.horarios[childId]=horariosDe(childId).filter(x=>x.id!==id);
+  save(); render();
+}
+
+// =========================================================================
+//  ICONOS
+// =========================================================================
+const ICN={
+  home:"M3 11l9-8 9 8M5 10v10h14V10", scale:"M12 3v18M5 7h14M7 7l-3 6a3 3 0 006 0zM17 7l-3 6a3 3 0 006 0z",
+  check:"M12 3a9 9 0 100 18 9 9 0 000-18zM8.5 12l2.5 2.5L16 9", swap:"M7 10l-4 4 4 4M3 14h13M17 14l4-4-4-4M21 10H8",
+  trophy:"M8 21h8M12 17v4M7 4h10v4a5 5 0 01-10 0zM7 6H4v1a3 3 0 003 3M17 6h3v1a3 3 0 01-3 3",
+  fork:"M5 3v7a3 3 0 003 3v8M8 3v8M16 3c-1.5 0-2.5 2-2.5 5s1 4 2.5 4v8", gift:"M20 12v9H4v-9M2 8h20v4H2zM12 21V8M12 8H7.5a2.5 2.5 0 010-5C11 3 12 8 12 8zM12 8h4.5a2.5 2.5 0 000-5C13 3 12 8 12 8z",
+  cog:"M12 8a4 4 0 100 8 4 4 0 000-8zM3 12h2M19 12h2M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4",
+  users:"M16 11a4 4 0 10-8 0M2 21a6 6 0 0120 0", coin:"M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v10M9 9.5h4a1.5 1.5 0 010 3H10a1.5 1.5 0 000 3h4",
+  kids:"M9 10a3 3 0 100-6 3 3 0 000 6zM3 20a6 6 0 0112 0M17.5 11a2.5 2.5 0 100-5 2.5 2.5 0 000 5M15.5 20H22a4.5 4.5 0 00-4.5-4.5",
+  cal:"M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2",
+};
+const svg=k=>`<svg viewBox="0 0 24 24"><path d="${ICN[k]}"/></svg>`;
+
+// =========================================================================
+//  VISTA ESCRITORIO — PADRE
+// =========================================================================
+const DESK_NAV=[["home","Resumen","home"],["hijos","Los hijos","kids"],["agenda","Calendario","cal"],["fixed","Tareas fijas","check"],["extra","Adicionales","scale"],["validate","Validar","users"],["rewards","Premios","trophy"],["menu","Menús","fork"],["econ","Economía","coin"]];
+// Contador de cosas pendientes por pestaña. Es el "aviso" de la app: sin
+// notificaciones push, al menos se ve de un vistazo qué requiere atención.
+function deskBadge(tab){
+  if(tab==="validate"){
+    const extras=(S.extras||[]).filter(x=>x.status==="submitted").length;
+    const fijas=children().reduce((n,k)=>n+(S.fixedTasks||[]).filter(t=>!isDaily(t))
+      .filter(t=>{const st=fixedStateOf(k.id,t.id);return st&&st.status==="submitted";}).length,0);
+    return extras+fijas;
+  }
+  if(tab==="rewards") return pendingRedemptions().length;
+  return 0;
+}
+function mobBadge(tab){
+  if(tab!=="market") return 0;
+  const me=S.profile;
+  return (S.offers||[]).filter(o=>o.status==="pending" &&
+    (S.listings||[]).some(l=>l.id===o.listingId && l.sellerId===me && l.status==="open")).length;
+}
+const badgeHtml=n=>n>0?`<span class="badge-num">${n>9?"9+":n}</span>`:"";
+const fmtDate=d=>d?new Date(d).toLocaleString("es-ES"):"—";
+
+function renderDesk(){
+  const tab=S.deskTab;
+  const titles={home:"Resumen de la casa",hijos:nombresHijos(),agenda:"Calendario de la semana",fixed:"Tareas fijas",extra:"Tareas adicionales",validate:"Validaciones",rewards:"Premios y canjes",menu:"Planificador de menús",econ:"Economía y ajustes"};
+  const body=({home:dHome,hijos:dHijos,agenda:dAgenda,fixed:dFixed,extra:dExtra,validate:dValidate,rewards:dRewards,menu:dMenu,econ:dEcon}[tab]||dHome)();
+  $("desk").innerHTML=`<div class="wrap">
+    <aside class="side">
+      <div class="brand"><span class="dot">🏠</span><div><div style="font-weight:700">Casa</div><div class="dim" style="font-size:11px">${esc(monthName(S.currentMonth))}</div></div></div>
+      <nav>${DESK_NAV.map(([t,l,ic])=>`<button class="${tab===t?"on":""}" onclick="setDeskTab('${t}')">${svg(ic)}${l}${badgeHtml(deskBadge(t))}</button>`).join("")}</nav>
+    </aside>
+    <main class="deskmain">
+      <h2>${titles[tab]}</h2><div class="crumb">Dashboard de los Papás</div>
+      <div class="screen${_quiet?" quiet":""}">${body}</div>
+    </main>
+  </div>`;
+}
+
+// =========================================================================
+//  VISTA "PREMIOS Y CANJES" (padre)
+// =========================================================================
+function dRewards(){
+  const pendientes=pendingRedemptions();
+  const resueltos=redemptions().filter(c=>c.status!=="pending").slice().reverse().slice(0,8);
+  const ETIQ={approved:"Concedido",denied:"Denegado"};
+  const CLASE={approved:"p-ok",denied:"p-late"};
+
+  return `
+  ${pendientes.length?`<div class="card" style="margin-bottom:18px;border-color:var(--amber)">
+    <h3 style="font-size:15px;margin-bottom:4px">Solicitudes por responder (${pendientes.length})</h3>
+    <p class="dim" style="font-size:12px;margin-bottom:12px">Al conceder se descuentan los puntos. Al denegar, tu hijo/a los recupera.</p>
+    <table><thead><tr><th>Hijo/a</th><th>Premio</th><th>Puntos</th><th>Pedido</th><th></th></tr></thead><tbody>
+    ${pendientes.map(c=>`<tr>
+      <td><b>${esc(member(c.childId).name)}</b></td>
+      <td>${esc(rewardById(c.rewardId).title)}</td>
+      <td class="num">${c.cost}</td>
+      <td class="dim" style="font-size:12px">${esc(fmtDate(c.at))}</td>
+      <td style="text-align:right">
+        <button class="btn ok sm" onclick="resolveRedeem('${esc(c.id)}','approved')">Conceder</button>
+        <button class="btn sm" onclick="resolveRedeem('${esc(c.id)}','denied')">Denegar</button></td></tr>`).join("")}
+    </tbody></table></div>`:`<div class="card" style="margin-bottom:18px"><div class="dim" style="font-size:14px">No hay solicitudes pendientes.</div></div>`}
+
+  <div class="card" style="margin-bottom:18px"><div class="row">
+    <div><h3 style="font-size:15px">Catálogo de premios</h3>
+      <p class="dim" style="font-size:13px;margin-top:4px">Lo que tus hijos pueden pedir con sus puntos. Desactiva uno para retirarlo sin borrar el historial.</p></div>
+    <span class="spacer"></span><button class="btn primary sm" onclick="modalAddReward()">+ Añadir</button></div></div>
+
+  <div class="card" style="margin-bottom:18px">
+    ${(S.rewards||[]).length?`<table><thead><tr><th>Premio</th><th>Tipo</th><th>Coste</th><th>Quedan</th><th>Estado</th><th></th></tr></thead><tbody>
+    ${S.rewards.map(r=>{const quedan=rewardStockLeft(r);
+      return `<tr>
+      <td><b>${esc(r.title)}</b></td>
+      <td><span class="chip">${esc(r.type||"—")}</span></td>
+      <td class="num">${r.cost}</td>
+      <td class="num">${quedan===Infinity?"∞":quedan}</td>
+      <td>${r.active!==false?'<span class="pill p-ok">activo</span>':'<span class="pill p-pending">desactivado</span>'}</td>
+      <td style="text-align:right">
+        <button class="btn sm" onclick="toggleReward('${esc(r.id)}')">${r.active!==false?"Desactivar":"Activar"}</button>
+        <button class="btn ghost sm" style="color:var(--red)" onclick="delReward('${esc(r.id)}')" aria-label="Borrar premio" title="Borrar premio">✕</button></td></tr>`;
+    }).join("")}</tbody></table>`:'<div class="empty">Sin premios todavía. Añade el primero.</div>'}
+  </div>
+
+  ${resueltos.length?`<div class="card">
+    <h3 style="font-size:15px;margin-bottom:12px">Historial</h3>
+    ${resueltos.map(c=>`<div class="task-line"><div style="flex:1;font-size:13px">
+      <b>${esc(member(c.childId).name)}</b> · ${esc(rewardById(c.rewardId).title)} <span class="dim">(${c.cost} pts)</span></div>
+      <span class="pill ${CLASE[c.status]}">${ETIQ[c.status]}</span></div>`).join("")}
+  </div>`:""}`;
+}
+
+// El padre resuelve una solicitud. Aprobar consolida el gasto (los puntos ya
+// estaban reservados); denegar los libera al borrar la solicitud del cómputo.
+function resolveRedeem(id,decision){
+  const c=redemptions().find(x=>x.id===id);
+  if(!c || c.status!=="pending") return;
+  c.status = decision==="approved" ? "approved" : "denied";
+  c.resolvedAt = Date.now();
+  save(); render();
+}
+function toggleReward(id){
+  const r=(S.rewards||[]).find(x=>x.id===id); if(!r) return;
+  r.active = r.active===false;
+  save(); render();
+}
+function delReward(id){
+  const r=(S.rewards||[]).find(x=>x.id===id); if(!r) return;
+  const usados=redemptions().filter(c=>c.rewardId===id).length;
+  const aviso = usados
+    ? `"${r.title}" tiene ${usados} solicitud(es) en el historial. Si lo borras, esas líneas quedarán sin nombre. ¿Mejor desactivarlo?\n\n¿Borrar de todos modos?`
+    : `¿Borrar "${r.title}"?`;
+  if(!confirm(aviso)) return;
+  // Las solicitudes pendientes de ese premio se cancelan: si no, reservarían
+  // puntos de un premio que ya no existe.
+  S.redemptions=redemptions().filter(c=>!(c.rewardId===id && c.status==="pending"));
+  S.rewards=S.rewards.filter(x=>x.id!==id);
+  save(); render();
+}
+function addReward(){
+  const t=$("rwTitle").value.trim(); if(!t) return;
+  const coste=parseInt($("rwCost").value,10);
+  if(!coste || coste<1){ alert("Pon un coste en puntos."); return; }
+  const stockTxt=($("rwStock")||{}).value;
+  const stock=stockTxt===""||stockTxt==null?null:Math.max(0,parseInt(stockTxt,10)||0);
+  S.rewards.push({id:uid("r"), title:t, cost:coste, type:($("rwType")||{}).value||"Privilegio", stock, active:true});
+  save(); closeModal(); render();
+}
+function modalAddReward(){ openModal(`<h3 style="margin-bottom:16px">Nuevo premio</h3>
+  <div class="field"><label>¿Qué se puede conseguir?</label><input id="rwTitle" placeholder="Ej. Elegir la peli del finde"></div>
+  <div class="row" style="gap:10px">
+    <div class="field" style="flex:1"><label>Coste en puntos</label><input id="rwCost" type="number" min="1" value="40"></div>
+    <div class="field" style="flex:1"><label>Tipo</label><select id="rwType">
+      <option>Privilegio</option><option>Tiempo</option><option>Plan</option><option>Regalo</option></select></div>
+  </div>
+  <div class="field"><label>Unidades disponibles (vacío = sin límite)</label><input id="rwStock" type="number" min="0" placeholder="sin límite"></div>
+  <button class="btn primary w" onclick="addReward()">Añadir premio</button>`); }
+
+// =========================================================================
+//  VISTA "CALENDARIO" (Dashboard de los Papás)
+//
+//  Rejilla de 3 franjas × 7 días. Con "Los tres" se ve el plan de la casa;
+//  eligiendo un hijo, además, se sombrea su tiempo ocupado. Como en "Los
+//  hijos", qué hijo se mira es de este ordenador y no va dentro de S.
+// =========================================================================
+let _deskAgendaHijo="todos";
+function setDeskAgendaHijo(id){ _deskAgendaHijo=id; render(); }
+
+// Argumentos para onclick="fn(kind,taskId,childId)". Los ids ya vienen
+// saneados ([A-Za-z0-9_-]) y además se escapan.
+const argsEntrada=e=>`'${esc(e.kind)}','${esc(e.taskId)}','${esc(e.childId||"")}'`;
+
+function chipAgenda(it,conNombre){
+  const k=member(it.hijo);
+  const cls="ag-chip"+(it.hecha?" hecha":"")+(it.conflicto?" conflicto":"");
+  const aviso=it.conflicto?" · ⚠ "+bloquesEnFranja(it.hijo,it.e.day,it.e.slot).map(textoBloque).join(", "):"";
+  return `<button class="${cls}" style="--c:${escColor(k.color)}" onclick="modalAgenda(${argsEntrada(it.e)})"
+      title="${esc(it.tarea.name+" · "+k.name+aviso)}">
+    <span>${esc(it.tarea.icon)}</span>
+    <span class="ag-txt">${esc(it.tarea.name)}${conNombre?`<small>${esc(k.name)}</small>`:""}</span>
+    ${it.conflicto?'<span class="ag-warn">⚠</span>':""}</button>`;
+}
+
+function dAgenda(){
+  const kids=children();
+  const sel=kids.some(k=>k.id===_deskAgendaHijo)?_deskAgendaHijo:"todos";
+  const deSel=h=>sel==="todos"||h===sel;
+  const items=itemsAgenda().filter(it=>deSel(it.hijo));
+  const pendientes=sinColocar().filter(p=>deSel(p.hijo));
+  const conflictos=items.filter(it=>it.conflicto).length;
+  const hoy=todayIdx();
+  const tabs=[["todos","Todos"]].concat(kids.map(k=>[k.id,k.name]));
+
+  const barra=`<div class="card" style="margin-bottom:18px">
+    <div class="row" style="flex-wrap:wrap;gap:12px">
+      <div class="seg" style="flex:1;min-width:280px;max-width:520px">
+        ${tabs.map(([id,l])=>`<button class="${sel===id?"on":""}" onclick="setDeskAgendaHijo('${esc(id)}')">${esc(l)}</button>`).join("")}
+      </div>
+      <span class="spacer"></span>
+      <button class="btn sm" onclick="vaciarAgenda()">Vaciar</button>
+      <button class="btn primary sm" onclick="organizarSemana()">🪄 Organizar semana</button>
+    </div>
+    <p class="dim" style="font-size:12px;margin-top:10px">El plan se repite todas las semanas hasta que lo cambiéis.
+      ${sel==="todos"?"Elige un hijo para ver su tiempo ocupado.":"Lo rayado es tiempo ocupado."}
+      Pulsa una tarea para moverla.
+      ${conflictos?`<b style="color:var(--red)">⚠ ${conflictos} tarea(s) en una franja ocupada.</b>`:""}</p>
+  </div>`;
+
+  const rejilla=`<div class="card" style="margin-bottom:18px;overflow-x:auto">
+    <table class="ag-grid"><thead><tr><th class="ag-fr"></th>
+      ${DAYS.map((d,i)=>`<th class="${i===hoy?"hoy":""}">${d}</th>`).join("")}</tr></thead><tbody>
+    ${FRANJAS.map(f=>`<tr><th class="ag-fr">${f.ico} ${f.label}<small>${f.ini}–${f.fin}</small></th>
+      ${DAYS.map((d,i)=>{
+        let cls="ag-cell"+(i===hoy?" hoy":""), ocupado="";
+        if(sel!=="todos"){
+          if(!franjaLibre(sel,i,f.id)) cls+=" ocupada";
+          const bl=bloquesEnFranja(sel,i,f.id);
+          if(bl.length) ocupado=`<div class="ag-busy">${bl.map(b=>esc(textoBloqueEn(b,f.id))).join("<br>")}</div>`;
+        }
+        const chips=items.filter(it=>it.e.day===i && it.e.slot===f.id).map(it=>chipAgenda(it,sel==="todos")).join("");
+        return `<td class="${cls}">${ocupado}${chips}</td>`;
+      }).join("")}</tr>`).join("")}
+    </tbody></table></div>`;
+
+  const sinPoner=`<div class="card" style="margin-bottom:18px">
+    <div class="row" style="margin-bottom:6px"><h3 style="font-size:15px">Sin colocar (${pendientes.length})</h3></div>
+    ${pendientes.length?`<p class="dim" style="font-size:12px;margin-bottom:8px">Tareas que aún no tienen día. <b>Organizar semana</b> las coloca solas en huecos libres.</p>
+      ${pendientes.map(p=>`<div class="task-line"><div class="tic">${esc(p.tarea.icon)}</div>
+        <div style="flex:1"><b>${esc(p.tarea.name)}</b>
+          <div class="dim" style="font-size:12px">${esc((member(p.hijo)||{}).name||"")} · ${p.e.kind==="fixed"?"semanal":"adicional · "+p.tarea.points+" pts"}</div></div>
+        <button class="btn sm" onclick="modalAgenda(${argsEntrada(p.e)})">Colocar</button></div>`).join("")}`
+    :`<div class="dim" style="font-size:13px">${S.generated||sel!=="todos"?"Todas las tareas tienen día. ✓":"Las adicionales aparecerán aquí cuando repartas el mes."}</div>`}
+  </div>`;
+
+  const horarios=`<h3 style="font-size:17px;margin:6px 0 12px">Horarios de cada hijo</h3>
+  <p class="dim" style="font-size:13px;margin:-6px 0 14px">Lo que cada uno tiene fijo cada semana. El calendario evita esas horas al organizar.</p>
+  <div class="cols-3">${kids.filter(k=>deSel(k.id)).map(k=>{
+    const bloques=horariosDe(k.id).slice().sort((a,b)=>a.ini<b.ini?-1:1);
+    let libres=0; for(let d=0;d<7;d++) FRANJAS.forEach(f=>{ if(franjaLibre(k.id,d,f.id)) libres++; });
+    return `<div class="card" style="border-top:4px solid ${escColor(k.color)}">
+      <div class="row" style="margin-bottom:8px"><b style="font-family:var(--num);font-size:16px">${esc(k.name)}</b>
+        <span class="spacer"></span><button class="btn sm" onclick="modalAddHorario('${esc(k.id)}')">+ Añadir</button></div>
+      ${bloques.length?bloques.map(b=>`<div class="task-line" style="padding:8px 0">
+        <div style="flex:1"><b style="font-size:13px">${esc(b.label)}</b>
+          <div class="dim" style="font-size:12px">${esc(diasTexto(b.days))} · ${esc(b.ini)}–${esc(b.fin)}</div></div>
+        <button class="btn ghost sm" style="color:var(--red)" onclick="delHorario('${esc(k.id)}','${esc(b.id)}')" aria-label="Borrar">✕</button></div>`).join("")
+      :'<div class="dim" style="font-size:13px;padding:6px 0">Sin horarios: libre toda la semana.</div>'}
+      <div class="dim" style="font-size:11px;margin-top:8px">${libres} de 21 franjas libres</div>
+    </div>`;}).join("")}</div>`;
+
+  return barra+rejilla+sinPoner+horarios;
+}
+
+// Elegir día y franja para una tarea: mini-rejilla con lo ocupado rayado.
+function modalAgenda(kind,taskId,childId){
+  const e=kind==="fixed"?{kind,taskId,childId}:{kind,taskId};
+  const tarea=kind==="fixed"?fixedTask(taskId):extraTask(taskId);
+  if(!tarea) return;
+  const hijo=hijoDeEntrada(e);
+  const k=member(hijo)||{name:"",color:"#9c8a76"};
+  const actual=agenda().find(x=>claveAgenda(x)===claveAgenda(e));
+  const args=argsEntrada(e);
+  openModal(`<h3 style="margin-bottom:4px">${esc(tarea.icon)} ${esc(tarea.name)}</h3>
+    <p class="dim" style="font-size:13px;margin-bottom:14px"><b style="color:${escColor(k.color)}">${esc(k.name)}</b> ·
+      ${kind==="fixed"?"semanal":"adicional"}. Elige cuándo. Lo rayado es tiempo ocupado.</p>
+    <table class="ag-mini"><thead><tr><th></th>${DAYLBL.map(d=>`<th>${d}</th>`).join("")}</tr></thead><tbody>
+    ${FRANJAS.map(f=>`<tr><th title="${esc(f.label+" "+f.ini+"–"+f.fin)}">${f.ico}</th>${DAYS.map((d,i)=>{
+      const libre=!hijo||franjaLibre(hijo,i,f.id);
+      const es=actual&&actual.day===i&&actual.slot===f.id;
+      const motivo=hijo?bloquesEnFranja(hijo,i,f.id).map(textoBloque).join(", "):"";
+      return `<td><button class="ag-pick${libre?"":" ocupada"}${es?" on":""}"
+        title="${esc(d+" · "+f.label+(motivo?" · "+motivo:""))}"
+        aria-label="${esc(d+" por la "+f.label.toLowerCase())}"
+        onclick="colocarEnAgenda(${args},${i},'${f.id}')">${es?"●":""}</button></td>`;
+    }).join("")}</tr>`).join("")}
+    </tbody></table>
+    <div class="row dim" style="font-size:11px;gap:14px;margin:10px 0 16px">
+      <span><span class="ag-pick ley"></span> libre</span><span><span class="ag-pick ley ocupada"></span> ocupado</span>
+      <span><span class="ag-pick ley on">●</span> ahora</span></div>
+    ${actual?`<button class="btn ghost w" style="color:var(--red)" onclick="quitarDeAgenda(${args})">Quitar del calendario</button>`:""}
+    <button class="btn w" style="margin-top:8px" onclick="closeModal()">Cancelar</button>`);
+}
+
+function modalAddHorario(childId){
+  const k=member(childId); if(!k) return;
+  openModal(`<h3 style="margin-bottom:4px">Horario de ${esc(k.name)}</h3>
+    <p class="dim" style="font-size:13px;margin-bottom:14px">Algo que tenga fijo cada semana: colegio, entrenamiento, academia…</p>
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn sm" onclick="rellenarHorario('Colegio',[0,1,2,3,4],'08:00','14:30')">🏫 Colegio L–V</button>
+      <button class="btn sm" onclick="rellenarHorario('Extraescolar',[0,2],'17:30','19:00')">⚽ Extraescolar</button>
+    </div>
+    <div class="field"><label>¿Qué es?</label><input id="hoLabel" maxlength="40" placeholder="Ej. Fútbol"></div>
+    <div class="field"><label>Días</label><div id="hoDias" class="ho-dias">
+      ${DAYS.map((d,i)=>`<label title="${d}"><input type="checkbox" value="${i}"><span>${DAYLBL[i]}</span></label>`).join("")}</div></div>
+    <div class="row" style="gap:10px">
+      <div class="field" style="flex:1"><label>Desde</label><input id="hoIni" type="time" value="17:00"></div>
+      <div class="field" style="flex:1"><label>Hasta</label><input id="hoFin" type="time" value="18:30"></div></div>
+    <div id="hoErr" style="color:var(--red);font-size:13px;font-weight:700;min-height:18px;margin-bottom:8px"></div>
+    <button class="btn primary w" onclick="addHorario('${esc(childId)}')">Añadir al horario</button>`);
+}
+// Atajos del formulario de horario.
+function rellenarHorario(label,days,ini,fin){
+  $("hoLabel").value=label; $("hoIni").value=ini; $("hoFin").value=fin;
+  document.querySelectorAll("#hoDias input").forEach(i=>{ i.checked=days.includes(+i.value); });
+}
+
+// =========================================================================
+//  VISTA "LOS HIJOS" (Dashboard de los Papás)
+//
+//  Sustituye a la antigua pestaña de invitaciones, que ya no tiene sentido:
+//  los tres perfiles están fijados y nadie se une ni se va.
+//
+//  Dos maneras de mirar lo mismo, que es lo que de verdad hace falta en casa:
+//    - "Los tres" para comparar de un vistazo y ver quién va flojo,
+//    - cada hijo por separado para entender POR QUÉ va flojo.
+//
+//  Qué hijo se está mirando es de este ordenador, no de la casa: por eso vive
+//  en una variable suelta y no dentro de S. Si estuviera en S, abrir la ficha
+//  de Pablo le cambiaría la pantalla a quien tuviera el panel abierto en otro
+//  sitio.
+// =========================================================================
+let _deskHijo="todos";
+function setDeskHijo(id){ _deskHijo=id; render(); }
+
+function dHijos(){
+  const kids=children();
+  if(!kids.length) return '<div class="empty">No hay hijos configurados.</div>';
+  const sel=kids.some(k=>k.id===_deskHijo)?_deskHijo:"todos";
+  const tabs=[["todos","Todos"]].concat(kids.map(k=>[k.id,k.name]));
+  const barra=`<div class="card" style="margin-bottom:18px"><div class="row">
+    <div class="seg" style="flex:1;max-width:520px">
+      ${tabs.map(([id,l])=>`<button class="${sel===id?"on":""}" onclick="setDeskHijo('${esc(id)}')">${esc(l)}</button>`).join("")}
+    </div><span class="spacer"></span>
+    <span class="dim" style="font-size:12px">${esc(monthName(S.currentMonth))}</span></div></div>`;
+  return barra + (sel==="todos" ? dHijosComparativa(kids) : dHijoFicha(member(sel)));
+}
+
+// --- Visión conjunta ------------------------------------------------------
+function dHijosComparativa(kids){
+  const canjes=k=>redemptions().filter(c=>c.childId===k.id&&c.status==="pending").length;
+  const porValidar=k=>
+    S.extras.filter(x=>x.memberId===k.id&&x.status==="submitted").length +
+    S.fixedTasks.filter(t=>!isDaily(t)).filter(t=>{const st=fixedStateOf(k.id,t.id);return st&&st.status==="submitted";}).length;
+
+  return `
+  <div class="cols-3" style="margin-bottom:20px">
+    ${kids.map(k=>{const m=money(k.id), lv=levelOf(k.id), r=Math.round(m.ratio*100);
+      return `<div class="card" style="border-top:4px solid ${escColor(k.color)}">
+        <div class="row" style="margin-bottom:12px">
+          <div class="avatar" style="width:42px;height:42px;font-size:18px;background:${escColor(k.color)}1f;color:${escColor(k.color)}">${esc(k.name[0]||"?")}</div>
+          <div><div style="font-family:var(--num);font-weight:600;font-size:17px">${esc(k.name)}</div>
+            <div class="dim" style="font-size:12px">Nivel ${lv.level} · ${lv.points} pts</div></div></div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <span class="pill" style="background:rgba(255,194,75,.16);color:var(--amber)">🔥 ${S.streak[k.id]||0}</span>
+          <span class="pill ${m.ratio>=1?"p-ok":m.ratio>=.75?"p-fixed":"p-late"}">${r}% fijas</span>
+          ${porValidar(k)?`<span class="pill p-wait">${porValidar(k)} por validar</span>`:""}
+          ${canjes(k)?`<span class="pill p-extra">${canjes(k)} premio(s)</span>`:""}
+        </div>
+        <div class="progress"><span style="width:${Math.min(100,r)}%;background:${m.ratio>=1?"var(--green)":m.ratio>=.75?"var(--cyan)":"var(--red)"}"></span></div>
+        <div class="row" style="margin-top:14px"><span class="dim" style="font-size:13px">A entregar</span>
+          <span class="spacer"></span><span class="num" style="font-size:21px;color:var(--accent-text)">${fmt(m.total)} €</span></div>
+        <button class="btn w sm" style="margin-top:12px" onclick="setDeskHijo('${esc(k.id)}')">Ver su ficha</button>
+      </div>`}).join("")}
+  </div>
+
+  <div class="cols">
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:6px">Comparativa del mes</h3>
+      <p class="dim" style="font-size:12px;margin-bottom:12px">Los mismos números para los tres, uno al lado del otro.</p>
+      <table><thead><tr><th>Hijo/a</th><th>Fijas</th><th>Extras</th><th>Puntos</th><th>Racha</th><th>Total</th></tr></thead><tbody>
+      ${kids.map(k=>{const m=money(k.id);
+        return `<tr><td><b style="color:${escColor(k.color)}">${esc(k.name)}</b></td>
+          <td class="num">${fixedApprovedUnits(k.id)}/${fixedTotalUnits(k.id)}</td>
+          <td class="num">${extraPointsApproved(k.id)}/${extraPointsAssigned(k.id)}</td>
+          <td class="num">${monthPoints(k.id)}</td>
+          <td class="num">${S.streak[k.id]||0} d</td>
+          <td class="num" style="color:var(--accent-text)">${fmt(m.total)} €</td></tr>`}).join("")}
+      </tbody></table>
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:6px">Puntos disponibles para premios</h3>
+      <p class="dim" style="font-size:12px;margin-bottom:12px">Los pedidos sin responder mantienen los puntos reservados.</p>
+      ${kids.map(k=>{const total=monthPoints(k.id), res=pointsCommitted(k.id), libres=pointsAvailable(k.id);
+        const pct=total?Math.round(libres/total*100):0;
+        return `<div style="margin-bottom:16px">
+          <div class="row" style="margin-bottom:6px"><b style="color:${escColor(k.color)}">${esc(k.name)}</b>
+            <span class="spacer"></span><span class="num" style="font-size:13px">${libres} libres${res?` · ${res} reservados`:""}</span></div>
+          <div class="progress"><span style="width:${pct}%;background:${escColor(k.color)}"></span></div>
+        </div>`}).join("")}
+    </div>
+  </div>`;
+}
+
+// --- Ficha individual -----------------------------------------------------
+function dHijoFicha(k){
+  if(!k) return '<div class="empty">Ese hijo/a ya no existe.</div>';
+  const m=money(k.id), lv=levelOf(k.id);
+  const misExtras=S.extras.filter(x=>x.memberId===k.id);
+  const misCanjes=redemptions().filter(c=>c.childId===k.id).slice().reverse().slice(0,6);
+  const ETIQ={pending:"sin empezar",submitted:"por validar",approved:"aprobada",late:"vencida"};
+  const CLASE={pending:"p-pending",submitted:"p-wait",approved:"p-ok",late:"p-late"};
+  const ETIQ_C={pending:"pedido",approved:"concedido",denied:"denegado"};
+  const CLASE_C={pending:"p-wait",approved:"p-ok",denied:"p-late"};
+
+  return `
+  <div class="kpis">
+    <div class="kpi"><div class="k">A entregar</div><div class="v" style="color:var(--accent-text)">${fmt(m.total)}<small> €</small></div></div>
+    <div class="kpi"><div class="k">Tareas fijas</div><div class="v">${Math.round(m.ratio*100)}<small>%</small></div></div>
+    <div class="kpi"><div class="k">Puntos del mes</div><div class="v">${lv.points}<small> · Nv ${lv.level}</small></div></div>
+    <div class="kpi"><div class="k">Racha</div><div class="v">${S.streak[k.id]||0}<small> días</small></div></div>
+  </div>
+
+  <div class="cols">
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:6px">Semana de ${esc(k.name)}</h3>
+      <p class="dim" style="font-size:12px;margin-bottom:14px">Las diarias las marca ${esc(k.name)} desde el móvil. Las semanales pasan por vosotros.</p>
+      ${S.fixedTasks.map(t=>{
+        const st=fixedStateOf(k.id,t.id)||{};
+        if(isDaily(t)){
+          const d=st.days||[false,false,false,false,false,false,false];
+          return `<div class="task-line"><div class="tic">${esc(t.icon)}</div>
+            <div style="flex:1"><b>${esc(t.name)}</b>
+              <div class="dim" style="font-size:12px">${d.filter(Boolean).length}/7 días</div></div>
+            <div style="display:flex;gap:4px">${d.map((on,i)=>`<span title="${DAYS[i]}" style="width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:11px;font-weight:800;font-family:var(--num);border:1.5px solid ${on?"var(--green)":"var(--line)"};background:${on?"var(--green)":"#fff"};color:${on?"#fff":"var(--faint)"}">${DAYLBL[i]}</span>`).join("")}</div></div>`;
+        }
+        const s=st.status||"pending";
+        return `<div class="task-line"><div class="tic">${esc(t.icon)}</div>
+          <div style="flex:1"><b>${esc(t.name)}</b><div class="dim" style="font-size:12px">semanal</div></div>
+          <span class="pill ${CLASE[s]}">${ETIQ[s]}</span>
+          ${s==="submitted"?`<button class="btn ok sm" onclick="setFixedStatus('${esc(k.id)}','${esc(t.id)}','approved')">Aprobar</button>`:""}</div>`;
+      }).join("")||'<div class="empty">Sin tareas fijas.</div>'}
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:6px">Sus tareas adicionales</h3>
+      <p class="dim" style="font-size:12px;margin-bottom:14px">${extraPointsApproved(k.id)} de ${extraPointsAssigned(k.id)} puntos aprobados.</p>
+      ${misExtras.length?misExtras.map(x=>{const t=extraTask(x.taskId);
+        return `<div class="task-line"><div class="tic">${esc(t.icon)}</div>
+          <div style="flex:1"><b>${esc(t.name)}</b>
+            <div class="dim" style="font-size:12px">${x.listed?"en el mercado":ETIQ[x.status]}</div></div>
+          <span class="pts">${t.points}</span>
+          ${x.status==="submitted"?`<button class="btn ok sm" onclick="setExtraStatus('${esc(x.id)}','approved')">Aprobar</button>`:`<span class="pill ${CLASE[x.status]}">${ETIQ[x.status]}</span>`}</div>`;
+      }).join(""):'<div class="empty">Todavía no tiene tareas repartidas.</div>'}
+    </div>
+  </div>
+
+  <div class="cols" style="margin-top:20px">
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:6px">Premios que ha pedido</h3>
+      <p class="dim" style="font-size:12px;margin-bottom:14px">Le quedan <b>${pointsAvailable(k.id)}</b> puntos libres${pointsCommitted(k.id)?` (${pointsCommitted(k.id)} reservados)`:""}.</p>
+      ${misCanjes.length?misCanjes.map(c=>`<div class="task-line">
+        <div style="flex:1"><b>${esc(rewardById(c.rewardId).title)}</b>
+          <div class="dim" style="font-size:12px">${esc(fmtDate(c.at))} · ${c.cost} pts</div></div>
+        ${c.status==="pending"
+          ? `<button class="btn ok sm" onclick="resolveRedeem('${esc(c.id)}','approved')">Conceder</button>
+             <button class="btn sm" onclick="resolveRedeem('${esc(c.id)}','denied')">Denegar</button>`
+          : `<span class="pill ${CLASE_C[c.status]}">${ETIQ_C[c.status]}</span>`}</div>`).join("")
+        :'<div class="empty">No ha pedido ningún premio.</div>'}
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:6px">Cuánta carga puede asumir</h3>
+      <p class="dim" style="font-size:12px;margin-bottom:14px">Se usa al repartir las adicionales: quien tenga menos tiempo (exámenes, entrenamientos) recibe menos peso.</p>
+      <div class="seg">${Object.keys(LOAD_LABEL).map(v=>`<button class="${k.load===v?"on":""}" onclick="setLoad('${esc(k.id)}','${v}')">${LOAD_LABEL[v]}</button>`).join("")}</div>
+      <div class="sect-title" style="margin-top:20px">Historial</div>
+      ${dHistorialHijo(k)}
+    </div>
+  </div>`;
+}
+
+// Meses ya cerrados. El servidor archiva un resumen por hijo al cambiar de mes.
+function dHistorialHijo(k){
+  const meses=Object.keys(S.history||{}).filter(Boolean).sort().reverse().slice(0,6);
+  if(!meses.length) return '<div class="dim" style="font-size:13px">Todavía no hay meses cerrados.</div>';
+  return `<table><thead><tr><th>Mes</th><th>Puntos</th><th>Hechas</th><th>Vencidas</th></tr></thead><tbody>
+    ${meses.map(mes=>{const h=S.history[mes]||{};
+      return `<tr><td>${esc(monthName(mes))}</td>
+        <td class="num">${(h.points||{})[k.id]||0}</td>
+        <td class="num">${(h.hechas||{})[k.id]||0}</td>
+        <td class="num">${(h.vencidas||{})[k.id]||0}</td></tr>`}).join("")}
+  </tbody></table>`;
+}
+
+function dHome(){
+  const kids=children();
+  const total=kids.reduce((s,k)=>s+money(k.id).total,0);
+  const pendingVal=S.extras.filter(x=>x.status==="submitted").length+kids.reduce((s,k)=>s+S.fixedTasks.filter(t=>!isDaily(t)).filter(t=>{const st=fixedStateOf(k.id,t.id);return st&&st.status==="submitted";}).length,0);
+  return `
+  <div class="kpis">
+    <div class="kpi"><div class="k">A entregar este mes</div><div class="v" style="color:var(--accent-text)">${fmt(total)}<small> €</small></div></div>
+    <div class="kpi"><div class="k">Hijos</div><div class="v">${kids.length}</div></div>
+    <div class="kpi"><div class="k">Por validar</div><div class="v">${pendingVal}</div></div>
+    <div class="kpi"><div class="k">Tareas activas</div><div class="v">${S.fixedTasks.length}<small> fijas</small> · ${S.extraTasks.length}<small> extra</small></div></div>
+  </div>
+  ${!S.generated?`<div class="card" style="margin-bottom:20px"><div class="row"><div><h3 style="font-size:16px">Aún no has generado el mes</h3><p class="dim" style="font-size:13px;margin-top:4px">Reparte las tareas fijas y adicionales para empezar.</p></div><span class="spacer"></span><button class="btn primary" onclick="generateMonth()">Generar mes</button></div></div>`:""}
+  <div class="cols">
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:6px">Cuánto debes a cada hijo/a</h3>
+      <p class="dim" style="font-size:12px;margin-bottom:12px">Fija si completa ≥75% · adicionales solo con el 100% de las fijas</p>
+      <table><thead><tr><th>Hijo/a</th><th>Fijas</th><th>Fija €/sem</th><th>Extra €/mes</th><th>Total</th></tr></thead><tbody>
+      ${kids.map(k=>{const m=money(k.id);const r=Math.round(m.ratio*100);
+        return `<tr><td><b>${esc(k.name)}</b></td>
+          <td><span class="chip" style="${m.ratio>=1?'color:var(--green)':m.ratio>=.75?'color:var(--cyan)':'color:var(--red)'}">${r}%</span></td>
+          <td class="num">${fmt(m.fixedEarned)}</td>
+          <td class="num">${m.canExtra?fmt(m.extraEarned):'<span class="dim">bloqueado</span>'}</td>
+          <td class="num" style="color:var(--accent-text)">${fmt(m.total)} €</td></tr>`}).join("")}
+      </tbody></table>
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:6px">Equilibrio de esfuerzo (adicionales)</h3>
+      <p class="dim" style="font-size:12px;margin-bottom:4px">Se reparte el peso, no el número de tareas.</p>
+      <div class="bal">${kids.map(k=>{const p=extraPointsAssigned(k.id);const max=Math.max(1,...kids.map(c=>extraPointsAssigned(c.id)));
+        return `<div class="col"><div class="bar" style="height:${30+p/max*70}%;background:linear-gradient(180deg,${escColor(k.color)},${escColor(k.color)}88)"><span class="v">${p}</span></div><span class="nm">${esc(k.name)}</span></div>`}).join("")}</div>
+    </div>
+  </div>
+  ${marketActivityCard()}`;
+}
+
+// Tarjeta de transparencia: qué se ha movido en el mercado entre hermanos.
+function marketActivityCard(){
+  const open=S.listings.filter(l=>l.status==="open");
+  const log=S.marketLog.slice(-6).reverse();
+  if(!open.length && !log.length) return "";
+  const t=id=>extraTask(id);
+  return `<div class="card" style="margin-top:20px">
+    <h3 style="font-size:15px;margin-bottom:4px">Mercado de tareas entre hermanos</h3>
+    <p class="dim" style="font-size:12px;margin-bottom:12px">Solo lectura. Los hijos se organizan; tú validas igualmente quién hace cada tarea.</p>
+    ${open.length?`<div class="sect-title">En venta ahora</div>
+      ${open.map(l=>`<div class="task-line"><div class="tic">${esc(t(l.taskId).icon)}</div><div style="flex:1"><b>${esc(t(l.taskId).name)}</b><div class="dim" style="font-size:12px">${esc(member(l.sellerId).name)}${l.pointsOffered>0?` · ofrece ${l.pointsOffered} pts`:""}${l.acceptsTrade?" · acepta trueque":""}</div></div><span class="chip p-extra">${t(l.taskId).points} pts</span></div>`).join("")}`:""}
+    ${log.length?`<div class="sect-title" style="margin-top:14px">Operaciones recientes</div>
+      ${log.map(m=>{const desc=m.kind==="take"
+        ?`${esc(member(m.to).name)} se quedó <b>${esc(t(m.taskId).name)}</b> de ${esc(member(m.from).name)}${m.points>0?` (+${m.points} pts)`:""}`
+        :`${esc(member(m.from).name)} ↔ ${esc(member(m.to).name)}: <b>${esc(t(m.taskId).name)}</b> por <b>${m.giveTaskId?esc(t(m.giveTaskId).name):"—"}</b>${m.points>0?` (+${m.points} pts)`:""}`;
+        return `<div class="task-line"><div style="flex:1;font-size:13px">${desc}</div></div>`}).join("")}`:""}
+  </div>`;
+}
+
+function dFixed(){
+  return `<div class="card" style="margin-bottom:18px"><div class="row">
+    <div><h3 style="font-size:15px">Lista común de tareas fijas</h3><p class="dim" style="font-size:13px;margin-top:4px">Las mismas para todos los hijos. Base de la paga fija (${fmt(S.fixedPay)} €/semana al completar ≥75%). Marca cada tarea como diaria o semanal.</p></div>
+    <span class="spacer"></span><button class="btn primary sm" onclick="modalAddFixed()">+ Añadir</button></div></div>
+  <div class="card">${S.fixedTasks.map(t=>`<div class="task-line"><div class="tic">${esc(t.icon)}</div>
+    <div style="flex:1"><b>${esc(t.name)}</b><div class="dim" style="font-size:12px">${isDaily(t)?"Cada día · 7 por semana":"Una vez por semana"}</div></div>
+    <div class="seg" style="width:180px;flex:none">
+      <button class="${isDaily(t)?"on":""}" onclick="setFixedFreq('${t.id}','daily')">Diaria</button>
+      <button class="${!isDaily(t)?"on":""}" onclick="setFixedFreq('${t.id}','weekly')">Semanal</button>
+    </div>
+    <button class="btn ghost sm" style="color:var(--red)" onclick="delFixed('${t.id}')" aria-label="Borrar tarea fija" title="Borrar tarea fija">✕</button></div>`).join("")||'<div class="empty">Sin tareas fijas.</div>'}</div>`;
+}
+
+function dExtra(){
+  return `<div class="card" style="margin-bottom:18px"><div class="row">
+    <div><h3 style="font-size:15px">Tareas adicionales</h3><p class="dim" style="font-size:13px;margin-top:4px">Dan dinero extra (puntos × ${S.rate} €). Se reparten por peso entre los hijos.</p></div>
+    <span class="spacer"></span><button class="btn primary sm" onclick="modalAddExtra()">+ Añadir</button></div></div>
+  <div class="cols">
+    <div class="card"><h3 style="font-size:14px;margin-bottom:12px">Catálogo</h3>
+      ${S.extraTasks.map(t=>`<div class="task-line"><div class="tic">${esc(t.icon)}</div><div style="flex:1"><b>${esc(t.name)}</b></div><span class="pts">${t.points}</span><button class="btn ghost sm" style="color:var(--red)" onclick="delExtra('${t.id}')" aria-label="Borrar tarea adicional" title="Borrar tarea adicional">✕</button></div>`).join("")}
+    </div>
+    <div class="card"><div class="row" style="margin-bottom:12px"><h3 style="font-size:14px">Reparto actual</h3><span class="spacer"></span><button class="btn sm" onclick="generateMonth()">${S.generated?"Volver a repartir":"Generar"}</button></div>
+      ${S.generated?children().map(k=>{const list=S.extras.filter(x=>x.memberId===k.id);
+        return `<div style="margin-bottom:14px"><div class="row" style="margin-bottom:6px"><b style="color:${escColor(k.color)}">${esc(k.name)}</b><span class="spacer"></span><span class="pts">${extraPointsAssigned(k.id)} pts</span></div>
+        ${list.map(x=>{const t=extraTask(x.taskId);return `<div class="row" style="font-size:13px;padding:4px 0"><span>${esc(t.icon)} ${esc(t.name)}</span><span class="spacer"></span><span class="dim num">${t.points}</span></div>`}).join("")}</div>`}).join(""):'<div class="empty">Genera el mes para ver el reparto.</div>'}
+    </div>
+  </div>`;
+}
+
+function dValidate(){
+  const rows=[];
+  children().forEach(k=>{
+    S.fixedTasks.filter(t=>!isDaily(t)).forEach(t=>{ const st=fixedStateOf(k.id,t.id);
+      if(st && (st.status==="submitted"||st.status==="pending")) rows.push({kind:"fixed",childId:k.id,taskId:t.id,status:st.status}); });
+  });
+  S.extras.forEach(x=>{ if(x.status==="submitted"||x.status==="pending") rows.push({kind:"extra",id:x.id,childId:x.memberId,taskId:x.taskId,status:x.status}); });
+  const note=`<p class="dim" style="font-size:13px;margin-bottom:16px">Las tareas <b>diarias</b> (hacer la cama, etc.) las marcan los hijos día a día y no necesitan tu validación. Aquí solo aparecen las <b>semanales</b> y las <b>adicionales</b>.</p>`;
+  if(!rows.length) return note+`<div class="empty">Nada pendiente de validar.</div>`;
+  return note+`<div class="card"><table><thead><tr><th>Tarea</th><th>Hijo/a</th><th>Tipo</th><th>Estado</th><th></th></tr></thead><tbody>
+    ${rows.map(r=>{const t=r.kind==="fixed"?fixedTask(r.taskId):extraTask(r.taskId);
+      const act=r.status==="submitted"
+        ? (r.kind==="fixed"
+            ? `<button class="btn ok sm" onclick="setFixedStatus('${r.childId}','${r.taskId}','approved')">Aprobar</button> <button class="btn sm" onclick="setFixedStatus('${r.childId}','${r.taskId}','pending')">Rechazar</button>`
+            : `<button class="btn ok sm" onclick="setExtraStatus('${r.id}','approved')">Aprobar</button> <button class="btn sm" onclick="setExtraStatus('${r.id}','pending')">Rechazar</button>`)
+        : (r.kind==="fixed"
+            ? `<button class="btn sm" onclick="setFixedStatus('${r.childId}','${r.taskId}','late')">Marcar vencida</button>`
+            : `<button class="btn sm" onclick="setExtraStatus('${r.id}','late')">Marcar vencida</button>`);
+      return `<tr><td>${esc(t.icon)} ${esc(t.name)}</td><td>${esc(member(r.childId).name)}</td><td><span class="chip ${r.kind==="fixed"?"p-fixed":"p-extra"}">${r.kind==="fixed"?"semanal":"extra "+t.points}</span></td>
+        <td>${r.status==="submitted"?'<span class="pill p-wait">por validar</span>':'<span class="pill p-pending">sin empezar</span>'}</td><td style="text-align:right">${act}</td></tr>`}).join("")}
+  </tbody></table></div>`;
+}
+
+function dMenu(){
+  return `<div class="card" style="margin-bottom:18px"><div class="row">
+    <div><h3 style="font-size:15px">Menú de la semana</h3><p class="dim" style="font-size:13px;margin-top:4px">Elige desayuno, comida y cena de cada día, o genera la semana entera desde tu base de platos.</p></div>
+    <span class="spacer"></span><button class="btn sm" onclick="regenMenu()">🎲 Generar semana</button></div></div>
+  <div class="card" style="margin-bottom:18px;overflow-x:auto">
+    <table><thead><tr><th>Día</th>${MEALS.map(m=>`<th>${MEAL_LABEL[m]}</th>`).join("")}</tr></thead><tbody>
+    ${DAYS.map(d=>`<tr><td><b>${d}</b></td>${MEALS.map(m=>`<td>
+      <select onchange="setMenu('${d}','${m}',this.value)" style="min-width:150px">
+        <option value="">—</option>
+        ${dishesOfType(m).map(p=>`<option value="${esc(p.id)}" ${menuAt(d,m)===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}
+      </select></td>`).join("")}</tr>`).join("")}
+    </tbody></table>
+  </div>
+  <div class="card"><div class="row" style="margin-bottom:12px"><h3 style="font-size:14px">Base de platos</h3><span class="spacer"></span><button class="btn sm" onclick="modalAddDish()">+ Plato</button></div>
+    ${MEALS.map(m=>{const lista=dishesOfType(m);
+      return `<div class="sect-title" style="margin-top:10px">${MEAL_LABEL[m]}</div>
+      ${lista.length?lista.map(p=>`<div class="task-line" style="padding:8px 0"><span style="flex:1">${esc(p.name)}</span>
+        <button class="btn ghost sm" style="color:var(--red)" onclick="delDish('${esc(p.id)}')" aria-label="Borrar plato" title="Borrar plato">✕</button></div>`).join("")
+        :'<div class="dim" style="font-size:13px;padding:6px 0">Sin platos todavía.</div>'}`;
+    }).join("")}
+  </div>`;
+}
+
+function dEcon(){
+  return `<div class="cols">
+    <div class="card"><h3 style="font-size:15px;margin-bottom:14px">Parámetros de dinero</h3>
+      <div class="field"><label>Paga fija por semana (€)</label><input id="ecFixed" type="number" step="0.5" value="${S.fixedPay}"></div>
+      <div class="field"><label>Euros por punto en adicionales</label><input id="ecRate" type="number" step="0.01" value="${S.rate}"></div>
+      <button class="btn primary w" onclick="saveEconInline()">Guardar</button>
+      <p class="dim" style="font-size:12px;margin-top:14px">Regla: ≥75% de fijas → cobra la paga fija. 100% de fijas → además gana las adicionales.</p>
+    </div>
+    <div class="card"><h3 style="font-size:15px;margin-bottom:14px">Disponibilidad de cada hijo/a</h3>
+      ${children().map(k=>`<div style="margin-bottom:14px"><div class="row" style="margin-bottom:7px"><b style="color:${escColor(k.color)}">${esc(k.name)}</b></div>
+        <div class="seg">${Object.keys(LOAD_LABEL).map(v=>`<button class="${k.load===v?"on":""}" onclick="setLoad('${k.id}','${v}')">${LOAD_LABEL[v]}</button>`).join("")}</div></div>`).join("")}
+      <button class="btn ghost w sm" style="margin-top:10px;color:var(--faint)" onclick="resetAll()">Reiniciar datos de ejemplo</button>
+    </div>
+    ${tarjetaAcceso()}
+    ${tarjetaCopias()}
+  </div>`;
+}
+function saveEconInline(){ S.rate=parseFloat($("ecRate").value)||S.rate; S.fixedPay=parseFloat($("ecFixed").value)||S.fixedPay; save(); render(); }
+
+// ---- Ajustes de la casa: acceso, avisos y copias ------------------------------
+// Se cargan del servidor aparte del estado (no viajan en él). Una sola petición
+// a la vez, y al terminar se repinta en silencio.
+let _casa={cargando:false, cargada:false, protegida:null, avisos:{}, copias:[], copiasError:false};
+async function cargarInfoCasa(forzar){
+  if(_casa.cargando || (_casa.cargada && !forzar)) return;
+  _casa.cargando=true;
+  try{
+    const [salud, avisos, copias]=await Promise.all([
+      api("/api/health").catch(()=>({})),
+      api("/api/push/estado").catch(()=>({})),
+      api("/api/copias").catch(()=>null),
+    ]);
+    _casa.protegida = typeof salud.protegida==="boolean" ? salud.protegida : null;
+    _casa.avisos = (avisos && avisos.suscripciones) || {};
+    _casa.copias = (copias && copias.copias) || [];
+    _casa.copiasError = !copias;
+  } finally {
+    _casa.cargando=false; _casa.cargada=true;
+    if(S && S.view==="desk") render({quiet:true});
+  }
+}
+
+// El código de casa es opcional: sin él se entra solo con la dirección. Se
+// informa en Economía, sin alarmas: es una decisión de la familia, no un fallo.
+function tarjetaAcceso(){
+  let acceso;
+  if(window.__DEMO__) acceso=`<p class="dim" style="font-size:13px">En la demo no hay código de casa.</p>`;
+  else if(_casa.protegida===false) acceso=`
+      <p style="font-size:13px;margin-bottom:8px"><span class="pill p-pending">Sin código de casa</span></p>
+      <p class="dim" style="font-size:13px">Se entra solo con la dirección. Si algún día queréis que pida un código
+      (por ejemplo, para publicarla), basta con poner <b>CODIGO_CASA</b> en Render: pasos en
+      <b>docs/OPERATIONS.md</b> («Enabling the house code»).</p>`;
+  else if(_casa.protegida && codigoCasa()) acceso=`
+      <p style="font-size:13px;margin-bottom:10px"><span class="pill p-ok">✓ Protegida con código de casa</span></p>
+      <p class="dim" style="font-size:13px;margin-bottom:10px">Para un móvil nuevo, mándale este enlace una vez (WhatsApp, AirDrop…). En un iPhone con la app ya instalada, escribe el código dentro de la app.</p>
+      <div class="row" style="gap:8px;flex-wrap:wrap">
+        <button class="btn sm" onclick="copiarEnlace()">📋 Copiar enlace</button>
+        ${navigator.share?`<button class="btn sm" onclick="compartirEnlace()">📤 Compartir</button>`:""}
+        <button class="btn ghost sm" onclick="mostrarCodigo(this)">Ver código</button></div>`;
+  else acceso=`<p class="dim" style="font-size:13px">Comprobando…</p>`;
+
+  const cuantos=(id)=>_casa.avisos[id]||0;
+  return `<div class="card">
+    <h3 style="font-size:15px;margin-bottom:12px">🔒 Acceso a la casa</h3>
+    ${acceso}
+    <h3 style="font-size:15px;margin:22px 0 10px">🔔 Avisos</h3>
+    <div class="avisos-bloque" style="margin-bottom:12px">${bloqueAvisos()}</div>
+    <p class="dim" style="font-size:12px">Reciben avisos: ${PERFILES.map(p=>`${esc(p.shortName||p.name)} <b>${cuantos(p.id)}</b>`).join(" · ")}</p>
+    <p class="dim" style="font-size:12px;margin-top:6px">Cada uno los activa en su móvil (en iPhone, con la app en la pantalla de inicio). Recordatorio cada tarde + avisos al momento cuando alguien entrega, aprueba o pide algo.</p>
+  </div>`;
+}
+async function copiarEnlace(){
+  try{ await navigator.clipboard.writeText(enlaceParaDispositivo()); alert("Enlace copiado. Pégalo en un mensaje para el móvil nuevo."); }
+  catch(e){ prompt("Copia este enlace:", enlaceParaDispositivo()); }
+}
+function compartirEnlace(){
+  navigator.share({title:"Casa", text:"Abre este enlace para entrar en Casa:", url:enlaceParaDispositivo()}).catch(()=>{});
+}
+function mostrarCodigo(boton){ boton.outerHTML=`<code style="font-size:14px;font-weight:800;letter-spacing:.06em">${esc(codigoCasa())}</code>`; }
+
+const MOTIVO_COPIA={diaria:"Diaria", antes_de_reiniciar:"Antes de reiniciar", antes_de_restaurar:"Antes de restaurar"};
+function tarjetaCopias(){
+  const lista=_casa.copias.slice(0,8);
+  return `<div class="card">
+    <h3 style="font-size:15px;margin-bottom:6px">🗂️ Copias de seguridad</h3>
+    <p class="dim" style="font-size:13px;margin-bottom:12px">Se guarda una <b>cada día</b> sola (las últimas 30) y otra justo antes de reiniciar o restaurar. Volver atrás es un clic.</p>
+    ${!_casa.cargada?'<div class="dim" style="font-size:13px">Cargando…</div>'
+      :_casa.copiasError?'<div class="dim" style="font-size:13px">No se pudieron cargar las copias.</div>'
+      :lista.length?lista.map(c=>`<div class="task-line" style="padding:8px 0">
+          <div style="flex:1"><b style="font-size:13px">${esc(fechaCopia(c.dia))}</b>
+            <div class="dim" style="font-size:12px">${esc(MOTIVO_COPIA[c.motivo]||c.motivo)} · ${esc(new Date(c.creada).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}))}</div></div>
+          <button class="btn sm" onclick="restaurarCopia(${Number(c.id)},'${esc(fechaCopia(c.dia))}')">Volver a esta</button></div>`).join("")
+      :'<div class="dim" style="font-size:13px">Todavía no hay copias: se hará la primera hoy.</div>'}
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:14px">
+      <button class="btn sm" onclick="downloadBackup()">⬇️ Descargar copia</button>
+      <button class="btn sm" onclick="document.getElementById('restoreFile').click()">⬆️ Restaurar desde archivo</button>
+      <input id="restoreFile" type="file" accept="application/json,.json" style="display:none" onchange="restoreBackup(this)"></div>
+    <p class="dim" style="font-size:11px;margin-top:10px">Si la copia nocturna está activada (solo en repositorios privados), cada noche se guarda otra fuera, en GitHub (rama <code>backups</code>).</p>
+  </div>`;
+}
+const fechaCopia=d=>{ const [y,m,dd]=String(d).split("-").map(Number); return new Date(y,m-1,dd).toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"}); };
+
+// Tras restaurar o reiniciar: se trae el estado nuevo sin perder qué pestaña
+// tenía abierta este dispositivo.
+async function recargarEstado(){
+  const local={view:S.view,profile:S.profile,deskTab:S.deskTab,mobTab:S.mobTab};
+  S=Object.assign(await api("/api/state"),local);
+  ensureShape(); marcarBase();
+  await cargarInfoCasa(true);
+  render();
+}
+async function restaurarCopia(id,dia){
+  if(window.__DEMO__){ alert("En la demo no se restauran copias."); return; }
+  if(!confirm("¿Volver la casa a como estaba el "+dia+"?\n\nLo de ahora se guarda antes como copia: se puede deshacer.")) return;
+  try{
+    await api("/api/copias/"+Number(id)+"/restaurar",{method:"POST"});
+    await recargarEstado();
+    alert("Hecho. La casa está como el "+dia+".");
+  }catch(e){ if(e.status!==401) alert("No se pudo restaurar. Inténtalo de nuevo."); }
+}
+
+// Descarga una copia del estado actual. Va por fetch y no por un enlace normal
+// porque tiene que llevar el código de casa en la cabecera.
+async function downloadBackup(){
+  if(window.__DEMO__){ alert("En la demo no se descargan copias."); return; }
+  try{
+    const r=await fetch("/api/backup",{headers:cabecerasApi()});
+    if(r.status===401){ pedirCodigoCasa(); return; }
+    if(!r.ok) throw new Error("http_"+r.status);
+    const url=URL.createObjectURL(await r.blob());
+    const a=document.createElement("a");
+    a.href=url; a.download="casa-copia-"+new Date().toISOString().slice(0,10)+".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+  }catch(e){ alert("No se pudo descargar la copia. Inténtalo de nuevo."); }
+}
+// Restaura el estado desde un archivo de copia elegido por el usuario.
+function restoreBackup(input){
+  const file=input.files && input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=async()=>{
+    let data;
+    try{ data=JSON.parse(reader.result); }catch(e){ alert("El archivo no es una copia válida."); return; }
+    if(!data || !Array.isArray(data.members)){ alert("El archivo no parece una copia de esta app."); return; }
+    if(!confirm("Esto reemplazará TODOS los datos actuales por los de la copia (lo de ahora se guarda antes como copia). ¿Continuar?")){ input.value=""; return; }
+    try{
+      await api("/api/restore",{method:"POST",body:data});
+      // Se recarga del servidor: la copia llega saneada y con el ciclo actual,
+      // y así S trae su versión (si no, el siguiente guardado iría a ciegas).
+      await recargarEstado();
+      alert("Copia restaurada correctamente.");
+    }catch(e){ if(e.status!==401) alert("No se pudo restaurar. Inténtalo de nuevo."); }
+    input.value="";
+  };
+  reader.readAsText(file);
+}
+
+// Modales escritorio
+function modalAddFixed(){ openModal(`<h3 style="margin-bottom:16px">Nueva tarea fija</h3>
+  <div class="field"><label>Nombre</label><input id="ftName" placeholder="Ej. Tender la cama"></div>
+  <div class="row" style="gap:10px"><div class="field" style="flex:1"><label>Frecuencia</label><select id="ftFreq"><option value="daily">Diaria</option><option value="weekly">Semanal</option></select></div>
+  <div class="field" style="flex:1"><label>Icono</label><select id="ftIcon"><option>🛏️</option><option>🍽️</option><option>🎒</option><option>🧸</option><option>🪥</option><option>👕</option><option>🧺</option><option>🗑️</option></select></div></div>
+  <button class="btn primary w" onclick="addFixed()">Añadir</button>`); }
+function modalAddExtra(){ openModal(`<h3 style="margin-bottom:16px">Nueva tarea adicional</h3>
+  <div class="field"><label>Nombre</label><input id="etName" placeholder="Ej. Limpiar la cocina"></div>
+  <div class="row" style="gap:10px"><div class="field" style="flex:1"><label>Esfuerzo (pts)</label><input id="etPts" type="number" value="20"></div>
+  <div class="field" style="flex:1"><label>Icono</label><select id="etIcon"><option>🧽</option><option>🧹</option><option>🧺</option><option>🗑️</option><option>🐕</option><option>🌱</option></select></div></div>
+  <button class="btn primary w" onclick="addExtra()">Añadir</button>`); }
+function modalAddDish(){ openModal(`<h3 style="margin-bottom:16px">Nuevo plato</h3>
+  <div class="field"><label>Nombre del plato</label><input id="dishName" placeholder="Ej. Curry de garbanzos"></div>
+  <div class="field"><label>¿Para qué comida?</label>
+    <select id="dishType">${MEALS.map(m=>`<option value="${m}">${MEAL_LABEL[m]}</option>`).join("")}</select></div>
+  <button class="btn primary w" onclick="addDish()">Añadir a la base</button>`); }
+function openModal(h){ $("modal").innerHTML=h; $("modalBg").classList.add("open"); }
+function closeModal(){ $("modalBg").classList.remove("open"); }
+
+// =========================================================================
+//  VISTA MÓVIL — HIJO
+// =========================================================================
+const MOB_NAV=[["home","Inicio","home"],["semana","Semana","cal"],["market","Mercado","swap"],["achieve","Logros","trophy"],["menu","Menú","fork"],["rewards","Premios","gift"]];
+
+function renderMob(){
+  const me=member(S.profile);
+  const lv=levelOf(me.id);
+  const av=`<div class="avatar" style="width:44px;height:44px;background:${escColor(me.color)}22;color:${escColor(me.color)}">${esc(me.name[0]||"?")}</div>`;
+  const body=({home:mHome,semana:mSemana,market:mMarket,achieve:mAchieve,menu:mMenu,rewards:mRewards}[S.mobTab]||mHome)();
+  $("mob").innerHTML=`<div class="phone">
+    <div class="head">${av}<div><h1>Hola, ${esc(me.name)}</h1><div class="sub">Nivel ${lv.level} · ${lv.points} pts este mes</div></div>
+      <button class="icon-btn" onclick="sheetPerfil()" aria-label="Cambiar de perfil">${svg("users")}</button></div>
+    <div class="screen${_quiet?" quiet":""}">${body}</div>
+  </div>
+  <div class="nav">${MOB_NAV.map(([t,l,ic])=>`<button class="${S.mobTab===t?"on":""}" onclick="setMobTab('${t}')" style="position:relative">${svg(ic)}<span>${l}</span>${badgeHtml(mobBadge(t))}</button>`).join("")}</div>`;
+}
+
+function mHome(){
+  const me=member(S.profile); const m=money(me.id); const lv=levelOf(me.id);
+  const doneU=fixedApprovedUnits(me.id), totU=fixedTotalUnits(me.id);
+  const extras=S.extras.filter(x=>x.memberId===me.id);
+  return `${tarjetaHoy(me.id)}${tarjetaAvisos()}
+  <div class="hero"><div class="row">
+    <div><div class="label">Ganado este mes</div><div class="big">${fmt(m.total)}<small> €</small></div></div>
+    <span class="spacer"></span><div class="ring" style="--pct:${lv.into}"><div class="inner">Lv${lv.level}</div></div>
+  </div>
+  <div class="row" style="margin-top:14px;gap:8px;flex-wrap:wrap">
+    <span class="pill" style="background:rgba(255,194,75,.16);color:var(--amber)">🔥 ${S.streak[me.id]||0} días</span>
+    <span class="pill ${m.fixedEarned>0?'p-ok':'p-late'}">Paga fija ${m.fixedEarned>0?'✓':'en riesgo'}</span>
+    <span class="pill ${m.canExtra?'p-extra':'p-pending'}">Extras ${m.canExtra?'desbloqueadas':'al 100% de fijas'}</span>
+  </div></div>
+
+  <div class="mcard">
+    <div class="row" style="margin-bottom:8px"><b>Tus tareas fijas (esta semana)</b><span class="spacer"></span><span class="dim num" style="font-size:13px">${doneU}/${totU}</span></div>
+    <div class="progress"><span style="width:${totU?doneU/totU*100:0}%;background:${m.ratio>=1?'var(--green)':m.ratio>=.75?'var(--cyan)':'var(--red)'}"></span></div>
+    <p class="dim" style="font-size:12px;margin-top:8px">${m.ratio>=1?'¡Todo al día! Ya puedes ganar con las adicionales.':m.ratio>=.75?'Paga fija asegurada. Complétalas todas para desbloquear las extras.':'Llega al 75% para asegurar tu paga fija.'}</p>
+  </div>
+  ${S.generated?S.fixedTasks.map(t=>fixedCardMob(t,me.id)).join(""):`<div class="empty">El mes aún no está repartido.</div>`}
+
+  ${extras.length?`<div class="sect-title" style="margin-top:18px">Adicionales (dinero extra)</div>
+    ${extras.map(x=>extraRowMob(x,me.id)).join("")}`:""}`;
+}
+
+// ===================== CALENDARIO (HIJO) =====================
+// Solo lectura: el calendario lo organizan los papás.
+const ETIQ_AGENDA={pending:"por hacer",submitted:"esperando visto bueno",approved:"hecha ✓",late:"vencida"};
+function itemAgendaMob(it){
+  return `<div class="sem-item${it.hecha?" hecha":""}">
+    <span class="sem-ico">${esc(it.tarea.icon)}</span>
+    <span style="flex:1;min-width:0"><b>${esc(it.tarea.name)}</b>
+      <small>${it.e.kind==="fixed"?"semanal":"adicional"} · ${it.listed?"en el mercado":ETIQ_AGENDA[it.estado]||""}</small></span></div>`;
+}
+// Tareas de un hijo en un día, agrupadas por franja.
+function franjasDelDia(items){
+  return FRANJAS.map(f=>{
+    const its=items.filter(it=>it.e.slot===f.id);
+    if(!its.length) return "";
+    return `<div class="sem-fr"><div class="sem-fr-h">${f.ico} ${f.label}</div>${its.map(itemAgendaMob).join("")}</div>`;
+  }).join("");
+}
+
+// Lo primero que ve un hijo al abrir: qué le toca hoy. Si no hay nada
+// planificado para hoy, la tarjeta no aparece.
+function tarjetaHoy(childId){
+  const hoy=todayIdx();
+  const mias=itemsAgenda().filter(it=>it.hijo===childId && it.e.day===hoy);
+  if(!mias.length) return "";
+  const pendientes=mias.filter(it=>!it.hecha).length;
+  return `<div class="mcard hoy-card">
+    <div class="row" style="margin-bottom:8px"><b>📅 Hoy te toca</b><span class="spacer"></span>
+      <span class="pill ${pendientes?"p-wait":"p-ok"}">${pendientes?pendientes+" pendiente"+(pendientes>1?"s":""):"todo hecho ✓"}</span></div>
+    ${franjasDelDia(mias)}
+  </div>`;
+}
+
+function mSemana(){
+  const me=member(S.profile);
+  const hoy=todayIdx();
+  const mias=itemsAgenda().filter(it=>it.hijo===me.id);
+  const diarias=(S.fixedTasks||[]).filter(isDaily);
+  let html=`<p class="dim" style="font-size:13px;margin:0 4px 14px">Tu semana, organizada por tus papás según tus horarios.</p>`;
+  if(diarias.length) html+=`<div class="mcard"><b style="font-size:14px">Todos los días</b>
+    <div class="sem-diarias">${diarias.map(t=>`<span class="chip">${esc(t.icon)} ${esc(t.name)}</span>`).join("")}</div></div>`;
+  if(!mias.length) html+=`<div class="empty" style="padding:18px 10px">Tus papás aún no han organizado la semana.</div>`;
+  DAYS.forEach((d,i)=>{
+    const delDia=mias.filter(it=>it.e.day===i);
+    const bloques=bloquesDe(me.id,i).slice().sort((a,b)=>a.ini<b.ini?-1:1);
+    const resumen=delDia.length?delDia.length+" tarea"+(delDia.length>1?"s":""):"libre";
+    html+=`<details class="sem-dia${i===hoy?" hoy":""}"${i===hoy?" open":""}>
+      <summary><span class="sem-d">${d}</span>${i===hoy?'<span class="pill p-wait">hoy</span>':""}
+        <span class="spacer"></span><span class="dim" style="font-size:12px">${resumen}</span></summary>
+      ${bloques.length?`<div class="sem-ocup">${bloques.map(b=>`<span>🕒 ${esc(textoBloque(b))}</span>`).join("")}</div>`:""}
+      ${delDia.length?franjasDelDia(delDia):'<div class="dim" style="font-size:13px;padding:6px 0 2px">Sin tareas este día.</div>'}
+    </details>`;
+  });
+  return html;
+}
+// Tarjeta de tarea fija en el móvil: diaria (7 casillas) o semanal (validación)
+function fixedCardMob(t,meId){
+  const st=fixedStateOf(meId,t.id)||{};
+  if(isDaily(t)){
+    const days=st.days||[false,false,false,false,false,false,false];
+    const ti=todayIdx(); const done=days.filter(Boolean).length;
+    return `<div class="mcard"><div class="row" style="margin-bottom:10px">
+      <div class="tic" style="width:38px;height:38px;font-size:17px">${esc(t.icon)}</div>
+      <div style="flex:1"><b>${esc(t.name)}</b><div class="dim" style="font-size:11px">Diaria · ${done}/7 días${done===7?' ✓':''}</div></div></div>
+      <div style="display:flex;gap:6px">${days.map((d,i)=>`<button onclick="toggleFixedDay('${meId}','${t.id}',${i})" aria-pressed="${d}" aria-label="${esc(t.name)}, ${DIAS_LARGOS[i]}" style="flex:1;aspect-ratio:1;border-radius:11px;border:1.5px solid ${d?'var(--green)':'var(--line)'};background:${d?'var(--green)':'#fff'};color:${d?'#fff':'var(--dim)'};font-weight:800;font-size:12px;font-family:var(--num);${i===ti?'box-shadow:0 0 0 2.5px var(--accent)':''}">${DAYLBL[i]}</button>`).join("")}</div>
+    </div>`;
+  }
+  // Semanal: pasa por validación del padre
+  const status=st.status||"pending";
+  const lbl={pending:"Toca a ti",submitted:"Esperando visto bueno",approved:"Hecha ✓",late:"Vencida"}[status];
+  const cls={pending:"p-pending",submitted:"p-wait",approved:"p-ok",late:"p-late"}[status];
+  return `<div class="task ${status==="approved"?"approved":""}"><div class="tic" style="width:40px;height:40px;border-radius:11px;background:var(--card2);display:grid;place-items:center;font-size:18px">${esc(t.icon)}</div>
+    <div style="flex:1"><div class="tname">${esc(t.name)}</div><div class="tsub"><span class="pill p-fixed" style="margin-right:5px">semanal</span><span class="pill ${cls}">${lbl}</span></div></div>
+    <div style="text-align:right">${status==="pending"?`<button class="btn ok sm" onclick="setFixedStatus('${meId}','${t.id}','submitted')">Hecha</button>`:""}</div></div>`;
+}
+// Fila de tarea fija (no afectada por el mercado)
+function taskRowMob(t,status,onMark,kind){
+  const lbl={pending:"Toca a ti",submitted:"Esperando visto bueno",approved:"Aprobada ✓",late:"Vencida"}[status];
+  const cls={pending:"p-pending",submitted:"p-wait",approved:"p-ok",late:"p-late"}[status];
+  const pts=kind==="extra"?`+${t.points}`:"";
+  return `<div class="task ${status==="approved"?"approved":""}"><div class="tic" style="width:40px;height:40px;border-radius:11px;background:var(--card2);display:grid;place-items:center;font-size:18px">${esc(t.icon)}</div>
+    <div style="flex:1"><div class="tname">${esc(t.name)}</div><div class="tsub"><span class="pill ${cls}">${lbl}</span></div></div>
+    <div style="text-align:right">${pts?`<div class="pts">${pts}</div>`:""}
+    ${status==="pending"?`<button class="btn ok sm" style="margin-top:6px" onclick="${onMark()}">Hecha</button>`:""}</div></div>`;
+}
+// Fila de tarea adicional (puede estar en venta o tener prima de mercado)
+function extraRowMob(x,meId){
+  const t=extraTask(x.taskId);
+  const lbl={pending:"Toca a ti",submitted:"Esperando visto bueno",approved:"Aprobada ✓",late:"Vencida"}[x.status];
+  const cls={pending:"p-pending",submitted:"p-wait",approved:"p-ok",late:"p-late"}[x.status];
+  // Prima de mercado pactada sobre esta tarea
+  let bounty="";
+  if(x.bounty){
+    if(x.bounty.to===meId) bounty=`<div class="dim" style="font-size:11px;color:var(--green)">+${x.bounty.points} pts de mercado</div>`;
+    else if(x.bounty.from===meId) bounty=`<div class="dim" style="font-size:11px;color:var(--red)">−${x.bounty.points} pts de mercado</div>`;
+  }
+  return `<div class="task ${x.status==="approved"?"approved":""}"><div class="tic" style="width:40px;height:40px;border-radius:11px;background:var(--card2);display:grid;place-items:center;font-size:18px">${esc(t.icon)}</div>
+    <div style="flex:1"><div class="tname">${esc(t.name)}</div>
+      <div class="tsub">${x.listed?`<span class="pill p-extra">🏷️ en el mercado</span>`:`<span class="pill ${cls}">${lbl}</span>`}</div>${bounty}</div>
+    <div style="text-align:right"><div class="pts">+${t.points}</div>
+    ${x.status==="pending"&&!x.listed?`<button class="btn ok sm" style="margin-top:6px" onclick="setExtraStatus('${x.id}','submitted')">Hecha</button>`:""}
+    ${x.listed?`<button class="btn ghost sm" style="margin-top:6px;color:var(--red)" onclick="cancelListingByAssignment('${x.id}')">Retirar</button>`:""}</div></div>`;
+}
+// Atajo: retirar del mercado desde la pantalla de inicio
+function cancelListingByAssignment(assignmentId){
+  const l=S.listings.find(x=>x.assignmentId===assignmentId && x.status==="open");
+  if(l) cancelListing(l.id);
+}
+
+// ===================== VISTA MERCADO (HIJO) =====================
+function mMarket(){
+  const me=member(S.profile);
+  if(!S.generated) return `<div class="empty">El mes aún no está repartido.<br>Cuando tus padres asignen las tareas adicionales, podrás venderlas o cambiarlas aquí.</div>`;
+
+  const sellable=S.extras.filter(x=>x.memberId===me.id && x.status==="pending" && !x.listed);
+  const myListings=S.listings.filter(l=>l.sellerId===me.id && l.status==="open");
+  const incoming=S.offers.filter(o=>o.status==="pending" && S.listings.some(l=>l.id===o.listingId && l.sellerId===me.id && l.status==="open"));
+  const board=S.listings.filter(l=>l.status==="open" && l.sellerId!==me.id);
+  const log=S.marketLog.slice(-6).reverse();
+  const t=id=>extraTask(id);
+
+  let html=`<p class="dim" style="font-size:13px;margin:0 4px 16px">Vende una tarea ofreciendo puntos a quien la haga, o cámbiala por otra. Os organizáis entre vosotros.</p>`;
+
+  // --- Solicitudes recibidas (te piden una tarea o te ofrecen un cambio) ---
+  if(incoming.length){
+    html+=`<div class="sect-title">📥 Te han pedido algo (${incoming.length})</div>`;
+    incoming.forEach(o=>{
+      const l=S.listings.find(x=>x.id===o.listingId);
+      const quien=esc(member(o.bidderId).name);
+      const esTake=o.kind==="take";
+      html+=`<div class="mcard" style="border-color:${esTake?"var(--accent)":"var(--violet)"}">
+        <div class="row"><span class="pill ${esTake?"p-wait":"p-extra"}">${esTake?"te la pide":"trueque"}</span>
+          <span class="spacer"></span><span class="dim" style="font-size:12px">de ${quien}</span></div>
+        <div style="margin:10px 0;font-size:14px;font-weight:700">${quien} hará tu <b>${esc(t(l.taskId).icon)} ${esc(t(l.taskId).name)}</b></div>
+        ${esTake
+          ? (l.pointsOffered>0
+              ? `<div class="row" style="font-size:13px"><span class="dim">Le darás</span><span class="spacer"></span><span class="pts">${l.pointsOffered} pts</span></div>`
+              : `<div class="dim" style="font-size:13px">Sin puntos de por medio.</div>`)
+          : `<div class="row" style="font-size:13px"><span class="dim">A cambio tú harás:</span><span class="spacer"></span><span>${esc(t(o.offeredTaskId).icon)} ${esc(t(o.offeredTaskId).name)} <span class="pts">${t(o.offeredTaskId).points}</span></span></div>
+             ${o.pointsAsked>0?`<div class="row" style="font-size:13px;margin-top:6px"><span class="dim">Te pide además:</span><span class="spacer"></span><span class="pts">${o.pointsAsked} pts</span></div>`:""}`}
+        <div class="row" style="gap:8px;margin-top:12px">
+          <button class="btn ok sm" style="flex:1" onclick="acceptOffer('${esc(o.id)}')">Aceptar</button>
+          <button class="btn sm" style="flex:1" onclick="rejectOffer('${esc(o.id)}')">Rechazar</button>
+        </div></div>`;
+    });
+  }
+
+  // --- Mis anuncios activos ---
+  if(myListings.length){
+    html+=`<div class="sect-title" style="margin-top:18px">🏷️ Tus anuncios</div>`;
+    myListings.forEach(l=>{
+      const offs=S.offers.filter(o=>o.listingId===l.id && o.status==="pending");
+      html+=`<div class="mcard"><div class="row">
+        <div class="tic" style="width:38px;height:38px;font-size:17px">${esc(t(l.taskId).icon)}</div>
+        <div style="flex:1"><div style="font-weight:800">${esc(t(l.taskId).name)}</div>
+          <div class="dim" style="font-size:12px">${l.pointsOffered>0?`Ofreces ${l.pointsOffered} pts`:""}${l.pointsOffered>0&&l.acceptsTrade?" · ":""}${l.acceptsTrade?"Acepta trueque":""}</div></div>
+        <span class="pts">${t(l.taskId).points}</span></div>
+        <div class="row" style="margin-top:10px"><span class="dim" style="font-size:12px">${offs.length?offs.length+" oferta(s) de trueque":"Aún sin ofertas"}</span>
+        <span class="spacer"></span><button class="btn ghost sm" style="color:var(--red)" onclick="cancelListing('${l.id}')">Retirar</button></div></div>`;
+    });
+  }
+
+  // --- Tablón de anuncios de los hermanos ---
+  html+=`<div class="sect-title" style="margin-top:18px">🛒 Tablón de la familia</div>`;
+  if(!board.length){
+    html+=`<div class="empty" style="padding:18px">Nadie ha puesto tareas ahora mismo.</div>`;
+  }else{
+    board.forEach(l=>{
+      html+=`<div class="mcard"><div class="row">
+        <div class="tic" style="width:42px;height:42px;font-size:19px">${esc(t(l.taskId).icon)}</div>
+        <div style="flex:1"><div style="font-weight:800">${esc(t(l.taskId).name)}</div>
+          <div class="dim" style="font-size:12px">de ${esc(member(l.sellerId).name)} · esfuerzo ${t(l.taskId).points}</div></div>
+        ${l.pointsOffered>0?`<div style="text-align:right"><div class="pts">+${l.pointsOffered}</div><div class="dim" style="font-size:11px">pts extra</div></div>`:""}</div>
+        ${l.note?`<div class="dim" style="font-size:12px;margin-top:8px;font-style:italic">"${esc(l.note)}"</div>`:""}
+        <div class="row" style="gap:8px;margin-top:12px">
+          ${yaPedida(l.id)
+            ? `<button class="btn sm" style="flex:1" disabled>Ya se la has pedido</button>`
+            : `<button class="btn primary sm" style="flex:1" onclick="confirmTake('${esc(l.id)}')">Pedírsela${l.pointsOffered>0?` (+${l.pointsOffered})`:""}</button>`}
+          ${l.acceptsTrade?`<button class="btn sm" style="flex:1" onclick="sheetTrade('${l.id}')">Ofrecer trueque</button>`:""}
+        </div></div>`;
+    });
+  }
+
+  // --- Mis tareas para poner en venta ---
+  html+=`<div class="sect-title" style="margin-top:18px">📦 Tus tareas adicionales</div>`;
+  if(!sellable.length){
+    html+=`<div class="empty" style="padding:18px">No tienes tareas adicionales libres para vender.</div>`;
+  }else{
+    sellable.forEach(x=>{
+      html+=`<div class="task"><div class="tic" style="width:40px;height:40px;font-size:18px">${esc(t(x.taskId).icon)}</div>
+        <div style="flex:1"><div class="tname">${esc(t(x.taskId).name)}</div><div class="tsub">${t(x.taskId).points} pts de esfuerzo</div></div>
+        <button class="btn sm" onclick="sheetPublish('${x.id}')">Vender / cambiar</button></div>`;
+    });
+  }
+
+  // --- Historial ---
+  if(log.length){
+    html+=`<div class="sect-title" style="margin-top:18px">🧾 Movimientos recientes</div>`;
+    log.forEach(m=>{
+      const desc = m.kind==="take"
+        ? `${esc(member(m.to).name)} se quedó <b>${esc(t(m.taskId).icon)} ${esc(t(m.taskId).name)}</b> de ${esc(member(m.from).name)}${m.points>0?` (+${m.points} pts)`:""}`
+        : `${esc(member(m.from).name)} y ${esc(member(m.to).name)} cambiaron <b>${esc(t(m.taskId).icon)}</b> ↔ <b>${m.giveTaskId?t(m.giveTaskId).icon:""}</b>${m.points>0?` (+${m.points} pts)`:""}`;
+      html+=`<div class="mcard" style="padding:11px 14px"><div style="font-size:13px">${desc}</div></div>`;
+    });
+  }
+
+  return html;
+}
+
+// Confirmar "me la quedo"
+function confirmTake(listingId){
+  const l=S.listings.find(x=>x.id===listingId); if(!l)return;
+  const t=extraTask(l.taskId);
+  openSheet(`<h3 style="margin-bottom:8px">¿Te quedas esta tarea?</h3>
+    <div class="mcard" style="margin-top:4px"><div class="row"><div class="tic">${esc(t.icon)}</div>
+      <div style="flex:1"><div style="font-weight:800">${esc(t.name)}</div><div class="dim" style="font-size:12px">de ${esc(member(l.sellerId).name)}</div></div></div>
+      <div class="row" style="margin-top:10px;font-size:13px"><span class="dim">Ganarás al completarla</span><span class="spacer"></span><span class="pts">${t.points}${l.pointsOffered>0?` + ${l.pointsOffered}`:""} pts</span></div></div>
+    <p class="dim" style="font-size:13px;margin:12px 0 6px">${esc(member(l.sellerId).name)} tiene que aceptarlo antes de que la tarea pase a ser tuya.</p>
+    <button class="btn primary w" style="margin-top:6px" onclick="takeListing('${esc(listingId)}','${esc(S.profile)}')">Pedírsela</button>`);
+}
+
+// Hoja para publicar una tarea
+function sheetPublish(assignmentId){
+  const x=S.extras.find(e=>e.id===assignmentId); const t=extraTask(x.taskId);
+  openSheet(`<h3 style="margin-bottom:4px">Poner en el mercado</h3>
+    <div class="dim" style="font-size:13px;margin-bottom:16px">${esc(t.icon)} ${esc(t.name)} · ${t.points} pts de esfuerzo</div>
+    <div class="field"><label>Puntos extra que ofreces a quien la haga</label><input id="plPoints" type="number" min="0" value="0" inputmode="numeric"></div>
+    <label style="display:flex;align-items:center;gap:10px;margin-bottom:14px;font-weight:700;font-size:14px;cursor:pointer">
+      <input id="plTrade" type="checkbox" checked style="width:auto;transform:scale(1.3)"> Aceptar también ofertas de trueque</label>
+    <div class="field"><label>Nota (opcional)</label><input id="plNote" placeholder="Ej. esta semana no puedo, ¿alguien?"></div>
+    <button class="btn primary w" onclick="publishListing('${assignmentId}')">Publicar</button>`);
+}
+
+// Hoja para ofrecer un trueque
+function sheetTrade(listingId){
+  const l=S.listings.find(x=>x.id===listingId); const t=extraTask(l.taskId);
+  const me=member(S.profile);
+  const mine=S.extras.filter(x=>x.memberId===me.id && x.status==="pending" && !x.listed);
+  if(!mine.length){ openSheet(`<h3 style="margin-bottom:10px">Sin tareas para cambiar</h3><p class="dim" style="font-size:14px">No tienes tareas adicionales libres que ofrecer a cambio.</p><button class="btn w" onclick="closeSheet()">Entendido</button>`); return; }
+  openSheet(`<h3 style="margin-bottom:4px">Ofrecer un trueque</h3>
+    <div class="dim" style="font-size:13px;margin-bottom:16px">Quieres la <b>${esc(t.icon)} ${esc(t.name)}</b> de ${esc(member(l.sellerId).name)}</div>
+    <div class="field"><label>¿Qué tarea tuya ofreces a cambio?</label>
+      <select id="toTask">${mine.map(x=>`<option value="${x.id}">${esc(extraTask(x.taskId).icon)} ${esc(extraTask(x.taskId).name)} (${extraTask(x.taskId).points} pts)</option>`).join("")}</select></div>
+    <div class="field"><label>Puntos que pides además (si su tarea es más pesada)</label><input id="toPoints" type="number" min="0" value="0" inputmode="numeric"></div>
+    <button class="btn primary w" onclick="submitTradeOffer('${listingId}','${S.profile}')">Enviar oferta</button>`);
+}
+
+function mAchieve(){
+  const me=member(S.profile); const lv=levelOf(me.id);
+  const fixedDone=fixedApprovedUnits(me.id);
+  const extraDone=S.extras.filter(x=>x.memberId===me.id&&x.status==="approved").length;
+  const prev=S.history[Object.keys(S.history).sort().pop()]; // último mes archivado
+  const prevPts=prev?prev.points[me.id]:null;
+  const badges=[
+    {e:"🎯",l:"1ª tarea",on:fixedDone+extraDone>=1},{e:"🔥",l:"Racha 3",on:(S.streak[me.id]||0)>=3},
+    {e:"✅",l:"Fijas 100%",on:fixedRatio(me.id)>=1},{e:"⭐",l:"Nivel 2",on:lv.level>=2},
+    {e:"💪",l:"Extra x3",on:extraDone>=3},{e:"🤝",l:"Trato justo",on:S.marketLog.some(s=>s.from===me.id||s.to===me.id)},
+    {e:"💎",l:"100 pts",on:lv.points>=100},{e:"🏆",l:"Nivel 5",on:lv.level>=5},
+  ];
+  return `<div class="mcard" style="background:linear-gradient(160deg,#fff,#fff0df);border-color:#ffe1bd"><div class="row">
+    <div class="ring" style="--pct:${lv.into};width:72px;height:72px"><div class="inner" style="width:58px;height:58px;font-size:16px">Lv${lv.level}</div></div>
+    <div style="margin-left:14px"><div style="font-weight:600;font-size:17px">Nivel ${lv.level}</div>
+    <div class="dim" style="font-size:13px">${lv.into}/100 pts para el siguiente</div>
+    <div class="pill" style="margin-top:8px;background:rgba(255,194,75,.16);color:var(--amber)">🔥 Racha de ${S.streak[me.id]||0} días</div></div></div></div>
+  <div class="mcard">
+    <div class="row"><b style="font-size:14px">Tu trabajo este mes</b></div>
+    <div class="row" style="margin-top:10px"><span class="dim" style="font-size:13px">Puntos acumulados</span><span class="spacer"></span><span class="pts" style="font-size:18px">${lv.points}</span></div>
+    ${prevPts!=null?`<div class="row" style="margin-top:6px"><span class="dim" style="font-size:13px">Mes anterior</span><span class="spacer"></span><span class="num dim">${prevPts}</span></div>
+      ${prev.hechas?`<div class="row" style="margin-top:4px"><span class="dim" style="font-size:13px">Adicionales hechas</span><span class="spacer"></span><span class="num dim">${prev.hechas[me.id]||0}${prev.vencidas&&prev.vencidas[me.id]?` · ${prev.vencidas[me.id]} sin hacer`:""}</span></div>`:""}
+      <p class="dim" style="font-size:11px;margin-top:8px">El nivel se reinicia cada mes: refleja cuánto has trabajado este mes.</p>`:`<p class="dim" style="font-size:11px;margin-top:8px">El nivel se reinicia el día 1 de cada mes.</p>`}
+  </div>
+  <div class="sect-title">Logros</div>
+  <div class="badges">${badges.map(b=>`<div class="badge ${b.on?"":"locked"}">${b.e}<div class="l">${b.l}</div></div>`).join("")}</div>`;
+}
+
+function mMenu(){
+  const hoy=DAYS[todayIdx()];
+  const deHoy=MEALS.map(m=>({meal:m, nombre:dishNameAt(hoy,m)})).filter(x=>x.nombre);
+  return `${deHoy.length?`<div class="hero"><div class="label">Hoy se come</div>
+      ${deHoy.map(x=>`<div class="row" style="margin-top:8px"><span class="dim" style="font-size:12px;width:76px">${MEAL_LABEL[x.meal]}</span>
+        <span style="font-size:17px;font-weight:600">${esc(x.nombre)}</span></div>`).join("")}
+    </div>`:`<div class="empty">Aún no hay menú para hoy.</div>`}
+  <div class="mcard"><b style="font-size:14px">Toda la semana</b><div style="margin-top:8px">
+    ${DAYS.map(d=>{
+      const platos=MEALS.map(m=>dishNameAt(d,m)).filter(Boolean);
+      return `<div class="day"><span class="dn">${d}</span><span style="font-size:13px">${platos.length?esc(platos.join(" · ")):"—"}</span></div>`;
+    }).join("")}</div></div>`;
+}
+
+function mRewards(){
+  const me=member(S.profile);
+  const total=levelOf(me.id).points, reservados=pointsCommitted(me.id), libres=pointsAvailable(me.id);
+  const mias=redemptions().filter(c=>c.childId===me.id).slice().reverse();
+  const ETIQ={pending:"Esperando respuesta",approved:"Concedido ✓",denied:"Denegado"};
+  const CLASE={pending:"p-wait",approved:"p-ok",denied:"p-late"};
+
+  return `<div class="mcard" style="background:linear-gradient(160deg,#fff,#fff0df)">
+    <div class="row"><span class="dim" style="font-size:13px">Puedes gastar</span><span class="spacer"></span><span class="pts" style="font-size:22px">${libres} pts</span></div>
+    ${reservados>0?`<div class="row" style="margin-top:6px"><span class="dim" style="font-size:12px">De ${total} pts, tienes ${reservados} pedidos</span></div>`:""}
+  </div>
+
+  ${mias.length?`<div class="sect-title">Tus solicitudes</div>
+    ${mias.slice(0,6).map(c=>`<div class="mcard" style="padding:12px 14px"><div class="row">
+      <div style="flex:1"><div style="font-weight:700;font-size:14px">${esc(rewardById(c.rewardId).title)}</div>
+        <div class="dim" style="font-size:11px;margin-top:3px">${c.cost} pts</div></div>
+      <span class="pill ${CLASE[c.status]}">${ETIQ[c.status]}</span></div>
+      ${c.status==="pending"?`<button class="btn ghost sm w" style="margin-top:8px;color:var(--red)" onclick="cancelRedeem('${esc(c.id)}')">Cancelar solicitud</button>`:""}
+    </div>`).join("")}`:""}
+
+  <div class="sect-title" style="margin-top:18px">Premios</div>
+  ${(S.rewards||[]).filter(rewardAvailable).map(r=>{
+    const puede=libres>=r.cost;
+    const quedan=rewardStockLeft(r);
+    return `<div class="mcard"><div class="row"><div><div style="font-weight:500">${esc(r.title)}</div>
+      <div class="dim" style="font-size:12px">${esc(r.type)}${quedan!==Infinity?` · quedan ${quedan}`:""}</div></div>
+      <span class="spacer"></span><span class="pts">${r.cost}</span></div>
+    <button class="btn ${puede?"primary":""} w sm" style="margin-top:12px${puede?"":";opacity:.45"}" ${puede?`onclick="sheetRedeem('${esc(r.id)}')"`:"disabled"}>${puede?"Canjear":`Te faltan ${r.cost-libres} pts`}</button></div>`;
+  }).join("")||'<div class="empty">Tus padres aún no han puesto premios.</div>'}`;
+}
+
+function sheetRedeem(id){
+  const r=rewardById(id); if(!r.id) return;
+  const me=member(S.profile);
+  openSheet(`<h3 style="margin-bottom:10px">Canjear premio</h3>
+    <p class="dim" style="font-size:14px;margin-bottom:8px">Vas a pedir "<b style="color:var(--text)">${esc(r.title)}</b>" por <b style="color:var(--text)">${r.cost} pts</b>.</p>
+    <p class="dim" style="font-size:13px;margin-bottom:18px">Los puntos se te reservan ahora. Cuando tus padres lo aprueben, se descontarán; si lo deniegan, los recuperas.</p>
+    <button class="btn primary w" onclick="doRedeem('${esc(id)}')">Enviar solicitud</button>`);
+}
+
+// El hijo pide el premio: se crea la solicitud y los puntos quedan reservados.
+function doRedeem(rewardId){
+  const r=rewardById(rewardId); if(!r.id) return;
+  const me=member(S.profile);
+  if(!rewardAvailable(r)){ alert("Ese premio ya no está disponible."); closeSheet(); render(); return; }
+  if(pointsAvailable(me.id)<r.cost){ alert("No te llegan los puntos."); closeSheet(); render(); return; }
+  redemptions().push({id:uid("c"), rewardId, childId:me.id, cost:r.cost, status:"pending", at:Date.now(), resolvedAt:0});
+  save(); closeSheet(); render();
+}
+function cancelRedeem(id){
+  const c=redemptions().find(x=>x.id===id);
+  if(!c || c.status!=="pending") return;
+  if(!confirm("¿Cancelar la solicitud? Recuperas los puntos.")) return;
+  S.redemptions=redemptions().filter(x=>x.id!==id);
+  save(); render();
+}
+// Hoja de perfil: quién está usando la app y cómo cambiar de persona.
+// Vale igual para el móvil de un hijo y para el Dashboard de los Papás.
+// No hay nada de cuenta que gestionar: no existen cuentas.
+function sheetPerfil(){
+  const p=perfilInfo();
+  const otros=PERFILES.filter(x=>x.id!==p.id);
+  openSheet(`<h3 style="margin-bottom:6px">Estás usando la app como</h3>
+    <div class="row" style="margin:14px 0 20px">
+      <span class="avatar" style="width:48px;height:48px;font-size:23px;background:${escColor(p.color)}1f;color:${escColor(p.color)}">${esc(p.emoji)}</span>
+      <div><div style="font-family:var(--num);font-weight:600;font-size:19px">${esc(p.shortName||p.name)}</div>
+        <div class="dim" style="font-size:12px">${p.role==="parent"?"Podéis validar tareas y cambiar los ajustes de la casa":"Marcas tus tareas; tus papás las validan"}</div></div></div>
+    <div class="sect-title">Cambiar a</div>
+    ${otros.map(o=>`<button class="btn w" style="margin-bottom:9px;justify-content:flex-start;gap:12px" onclick="elegirPerfil('${esc(o.id)}')">
+      <span class="avatar" style="width:32px;height:32px;font-size:17px;background:${escColor(o.color)}1f;color:${escColor(o.color)}">${esc(o.emoji)}</span>
+      ${esc(o.shortName||o.name)}</button>`).join("")}
+    <button class="btn ghost w" style="margin-top:10px" onclick="cambiarDePerfil()">Ver todos los perfiles</button>
+    <div class="sect-title" style="margin-top:22px">Avisos en este móvil</div>
+    <div class="avisos-bloque">${bloqueAvisos()}</div>`);
+  comprobarAvisos();
+}
+
+// Sheet helpers
+function openSheet(h){ $("sheet").innerHTML=`<div class="grab"></div>${h}`; $("sheet").classList.add("open"); $("sheetBg").classList.add("open"); }
+function closeSheet(){ $("sheet").classList.remove("open"); $("sheetBg").classList.remove("open"); }
+
+
+// =========================================================================
+//  RENDER PRINCIPAL
+// =========================================================================
+function renderModebar(){
+  const p=perfilInfo();
+  $("modebar").innerHTML=`<span style="font-weight:800">🏠 Casa</span>
+    <span class="dim" style="font-size:12px">· ${esc(p.emoji)} ${esc(p.shortName||p.name)}</span>
+    <span class="spacer"></span>
+    <span class="dim" style="font-size:12px">${esc(monthName(S.currentMonth))}</span>
+    <span id="connDot" title="Conectado" style="width:9px;height:9px;border-radius:50%;background:var(--green);display:inline-block;margin:0 4px 0 8px"></span>
+    <button class="btn ghost sm" style="padding:5px 10px" onclick="sheetPerfil()">Cambiar</button>`;
+}
+// quiet: repintado provocado por el sondeo, no por el usuario. Se salta la
+// animación de entrada para que la pantalla no "parpadee" sola cada pocos
+// segundos cuando otro dispositivo cambia algo.
+let _quiet=false;
+function render(opts){
+  _quiet=!!(opts&&opts.quiet);
+  if(ensureFixedShape()) save(); // si faltaba forma, se guarda (si no, bucle)
+  renderModebar();
+  if(S.view==="desk"){
+    $("desk").style.display="block"; $("mob").style.display="none";
+    renderDesk();
+  }else{
+    $("desk").style.display="none"; $("mob").style.display="block";
+    // La pantalla de móvil siempre pinta a un hijo. Si el perfil abierto no lo
+    // es (o su ficha aún no ha llegado del servidor), se cae al primero.
+    if(!member(S.profile) || member(S.profile).role!=="child"){
+      const kid=children()[0];
+      if(!kid) return showFatal("No hay ningún hijo configurado en la casa.");
+      S.profile=kid.id;
+    }
+    renderMob();
+  }
+}
+// ============== ARRANQUE: elegir perfil → app ==============
+//
+// No hay inicio de sesión. Al abrir, la app pregunta quién eres (o lo recuerda
+// de la última vez) y entra directamente en tu pantalla.
+//
+// PERFIL guarda quién está usando ESTE dispositivo. Es de este navegador y no
+// viaja dentro del estado compartido: si viajara, cambiar de perfil en el móvil
+// de Sara le cambiaría la pantalla a todos los demás.
+const PERFIL_KEY="casa_perfil_v1";
+let PERFIL=null;
+
+function perfilActual(){
+  if(PERFIL) return PERFIL;
+  try{
+    const guardado=localStorage.getItem(PERFIL_KEY);
+    if(esPerfilValido(guardado)) PERFIL=guardado;
+  }catch(e){}
+  return PERFIL;
+}
+function recordarPerfil(id){
+  PERFIL=id;
+  try{ localStorage.setItem(PERFIL_KEY,id); }catch(e){}
+}
+function olvidarPerfil(){
+  PERFIL=null;
+  try{ localStorage.removeItem(PERFIL_KEY); }catch(e){}
+}
+// Datos del perfil abierto ahora mismo (nombre, color, emoji…).
+const perfilInfo=()=>perfilPorId(perfilActual())||PAPAS;
+
+// ============== CÓDIGO DE CASA ==============
+//
+// La llave de la casa. Los papás mandan a cada móvil un enlace que lo lleva
+// (https://…/#casa=ABCD-EFGH-JKMN); el móvil lo guarda y lo envía solo en cada
+// petición. Va detrás de "#" a propósito: esa parte de la dirección nunca sale
+// del navegador, así que no queda en los registros de ningún servidor.
+//
+// En iPhone, la app añadida a la pantalla de inicio guarda sus datos aparte de
+// Safari: ahí no llega lo del enlace y la app pide el código una vez.
+const CODIGO_KEY="casa_codigo_v1";
+let CODIGO=null;
+function codigoCasa(){
+  if(CODIGO!==null) return CODIGO;
+  try{ CODIGO=localStorage.getItem(CODIGO_KEY)||""; }catch(e){ CODIGO=""; }
+  return CODIGO;
+}
+function guardarCodigoCasa(c){
+  CODIGO=String(c||"").trim();
+  try{ localStorage.setItem(CODIGO_KEY,CODIGO); }catch(e){}
+}
+function leerCodigoDeEnlace(hash){
+  const m=/(?:^|[#&])casa=([A-Za-z0-9%\- ]{4,80})/.exec(hash||"");
+  if(!m) return "";
+  try{ return decodeURIComponent(m[1]).trim(); }catch(e){ return ""; }
+}
+function adoptarCodigoDelEnlace(){
+  const c=leerCodigoDeEnlace(location.hash);
+  if(!c) return;
+  guardarCodigoCasa(c);
+  // Fuera de la barra de direcciones: que no salga en una captura de pantalla
+  // ni viaje si alguien comparte la página.
+  try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+}
+const enlaceParaDispositivo=()=>location.origin+"/#casa="+encodeURIComponent(codigoCasa());
+
+function pedirCodigoCasa(error){
+  clearInterval(_poll);
+  closeSheet(); closeModal();
+  $("desk").style.display="none";
+  $("mob").style.display="none";
+  $("modebar").style.display="none";
+  $("picker").style.display="block";
+  $("picker").innerHTML=`<div class="pick-shell"><div class="pick-card" style="max-width:440px">
+    <div class="pick-brand"><span class="dot">🔒</span>
+      <div><h1>Casa</h1><div class="sub">Esta casa es privada</div></div></div>
+    ${error?`<div class="pick-err">${esc(error)}</div>`:""}
+    <div class="card">
+      <p style="font-size:14px;margin:0 0 14px">Escribe el <b>código de casa</b>. Te lo dan tus papás (o abre el enlace que te hayan mandado).</p>
+      <div class="field"><label for="codigoInput">Código de casa</label>
+        <input id="codigoInput" autocomplete="off" autocapitalize="characters" spellcheck="false"
+          placeholder="XXXX-XXXX-XXXX" onkeydown="if(event.key==='Enter')enviarCodigoCasa()"></div>
+      <button class="btn primary w" onclick="enviarCodigoCasa()">Entrar</button>
+    </div>
+    <p class="pick-note">Solo se pide una vez en cada móvil.</p>
+  </div></div>`;
+}
+async function enviarCodigoCasa(){
+  const v=(($("codigoInput")||{}).value||"").trim();
+  if(!v) return pedirCodigoCasa("Escribe el código.");
+  guardarCodigoCasa(v);
+  try{
+    const estado=await api("/api/state");
+    await arrancarCon(estado);
+  }catch(e){
+    if(e.status===401) pedirCodigoCasa("Ese código no es el de esta casa. Revísalo.");
+    else if(e.status===429) pedirCodigoCasa("Demasiados intentos seguidos. Espera unos minutos.");
+    else pedirCodigoCasa("No se pudo comprobar. ¿Hay conexión?");
+  }
+}
+
+async function bootstrap(){
+  clearInterval(_poll);
+  adoptarCodigoDelEnlace();
+  // Se pregunta al servidor ANTES de enseñar el selector: si la casa pide
+  // código y este móvil no lo tiene, lo primero que hay que ver es eso, no
+  // cuatro botones que luego no llevan a ningún sitio.
+  let estado=null;
+  try{ estado=await api("/api/state"); }
+  catch(e){
+    if(e.status===401) return;                      // api() ya ha pedido el código
+    if(e.status===429) return pedirCodigoCasa("Demasiados intentos seguidos. Espera unos minutos.");
+    // Sin conexión: se sigue, y abrirPerfil enseñará el error si no se puede.
+  }
+  await arrancarCon(estado);
+}
+async function arrancarCon(estado){
+  if(!perfilActual()) return mostrarSelector();
+  await abrirPerfil(perfilActual(), estado);
+}
+
+// ============== AVISOS EN EL MÓVIL ==============
+//
+// En iPhone solo funcionan con la app añadida a la pantalla de inicio (iOS
+// 16.4 o posterior); en un Safari normal ni siquiera existen. El permiso se
+// pide SIEMPRE desde un botón: iOS ignora la petición si no la provoca un
+// toque del usuario.
+const AVISOS_CERRADO_KEY="casa_avisos_tarjeta_cerrada_v1";
+let _avisos="desconocido";   // demo | instalar | no-soportado | denegado | activos | inactivos
+const esIOS=()=>/iPad|iPhone|iPod/.test(navigator.userAgent||"")||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const esAppInstalada=()=>navigator.standalone===true||!!(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
+const soportaAvisos=()=>"serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+// navigator.serviceWorker.ready no termina nunca si el service worker no se
+// pudo instalar: se le pone un límite para no dejar la pantalla esperando.
+const swListo=()=>Promise.race([navigator.serviceWorker.ready,new Promise((_,mal)=>setTimeout(()=>mal(new Error("sin_service_worker")),5000))]);
+async function suscripcionActual(){
+  try{ return await (await swListo()).pushManager.getSubscription(); }catch(e){ return null; }
+}
+
+async function comprobarAvisos(){
+  let estado;
+  if(window.__DEMO__) estado="demo";
+  else if(!soportaAvisos()) estado=esIOS()&&!esAppInstalada()?"instalar":"no-soportado";
+  else if(Notification.permission==="denied") estado="denegado";
+  else estado=(Notification.permission==="granted" && await suscripcionActual())?"activos":"inactivos";
+  if(estado!==_avisos){
+    _avisos=estado;
+    document.querySelectorAll(".avisos-bloque").forEach(el=>{ el.innerHTML=bloqueAvisos(); });
+    if(S && $("picker").style.display!=="block") render({quiet:true});
+  }
+  return estado;
+}
+
+function base64UrlABytes(b64){
+  const s=(b64+"=".repeat((4-b64.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/");
+  return Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+}
+
+async function activarAvisos(){
+  if(_avisos==="instalar"){ alert(TEXTO_INSTALAR); return; }
+  if(!soportaAvisos()){ alert("Este navegador no admite avisos."); return; }
+  try{
+    // Lo primero, sin esperar a nada: iOS solo acepta la petición de permiso
+    // si sale directamente del toque en el botón.
+    const permiso=await Notification.requestPermission();
+    if(permiso!=="granted"){
+      await comprobarAvisos();
+      alert(permiso==="denied"
+        ?"Has bloqueado los avisos. Para activarlos: Ajustes del móvil → Notificaciones → Casa."
+        :"Sin permiso no se pueden mandar avisos.");
+      return;
+    }
+    const reg=await swListo();
+    const {clave}=await api("/api/push/clave");
+    // Una suscripción anterior puede ser de otras claves: se rehace siempre.
+    const vieja=await reg.pushManager.getSubscription();
+    if(vieja){
+      await api("/api/push/baja",{method:"POST",body:{endpoint:vieja.endpoint}}).catch(()=>{});
+      await vieja.unsubscribe().catch(()=>{});
+    }
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64UrlABytes(clave)});
+    await api("/api/push/suscribir",{method:"POST",body:{suscripcion:sub.toJSON()}});
+    try{ localStorage.setItem(AVISOS_CERRADO_KEY,"1"); }catch(e){}
+    await comprobarAvisos();
+    await probarAvisos(true);
+  }catch(e){
+    if(e.status!==401) alert("No se pudieron activar los avisos. Inténtalo de nuevo.");
+    comprobarAvisos();
+  }
+}
+async function desactivarAvisos(){
+  const sub=await suscripcionActual();
+  if(sub){
+    await api("/api/push/baja",{method:"POST",body:{endpoint:sub.endpoint}}).catch(()=>{});
+    await sub.unsubscribe().catch(()=>{});
+  }
+  comprobarAvisos();
+}
+async function probarAvisos(silencioso){
+  const sub=await suscripcionActual();
+  if(!sub){ if(!silencioso) alert("Este móvil no tiene los avisos activados."); return; }
+  try{ await api("/api/push/prueba",{method:"POST",body:{endpoint:sub.endpoint}}); }
+  catch(e){ if(!silencioso && e.status!==401) alert("No se pudo mandar el aviso de prueba."); }
+}
+// Al abrir un perfil: si este móvil ya recibe avisos, que pasen a ser los del
+// perfil abierto. Sin preguntar nada: solo se actualiza a quién van.
+async function sincronizarAvisos(){
+  if(window.__DEMO__ || !soportaAvisos() || Notification.permission!=="granted") return comprobarAvisos();
+  const sub=await suscripcionActual();
+  if(sub) await api("/api/push/suscribir",{method:"POST",body:{suscripcion:sub.toJSON()}}).catch(()=>{});
+  comprobarAvisos();
+}
+
+const TEXTO_INSTALAR="Para recibir avisos en el iPhone, primero añade Casa a la pantalla de inicio: "+
+  "en Safari, botón Compartir → «Añadir a pantalla de inicio». Después ábrela desde ese icono y activa los avisos.";
+
+function bloqueAvisos(){
+  const txt=(t)=>`<p class="dim" style="font-size:13px;margin:0">${t}</p>`;
+  switch(_avisos){
+    case "demo": return txt("En la demo no hay avisos.");
+    case "instalar": return txt(esc(TEXTO_INSTALAR));
+    case "no-soportado": return txt("Este navegador no admite avisos.");
+    case "denegado": return txt("Los avisos están bloqueados en este dispositivo. Actívalos en Ajustes → Notificaciones → Casa.");
+    case "activos": return `<div class="row" style="flex-wrap:wrap;gap:8px">
+        <span class="pill p-ok">✓ Avisos activados aquí</span><span class="spacer"></span>
+        <button class="btn sm" onclick="probarAvisos()">Probar</button>
+        <button class="btn ghost sm" onclick="desactivarAvisos()">Desactivar</button></div>`;
+    case "inactivos": return `<button class="btn primary w" onclick="activarAvisos()">🔔 Activar avisos</button>`;
+    default: return txt("Comprobando…");
+  }
+}
+
+// Tarjeta en el inicio de cada hijo hasta que active los avisos o la cierre.
+// Es lo que más ayuda a que la app se use: un recordatorio a su hora.
+function tarjetaAvisos(){
+  if(!["inactivos","instalar"].includes(_avisos)) return "";
+  try{ if(localStorage.getItem(AVISOS_CERRADO_KEY)) return ""; }catch(e){}
+  return `<div class="mcard" style="border-color:#ffd9b8;background:linear-gradient(160deg,#fff,#fff6ec)">
+    <b style="font-size:15px">🔔 Que no se te olvide nada</b>
+    <p class="dim" style="font-size:13px;margin:6px 0 12px">${_avisos==="instalar"
+      ?esc(TEXTO_INSTALAR)
+      :"Activa los avisos y te recordamos por la tarde lo que te toca. También te enteras al momento cuando te aprueban algo."}</p>
+    <div class="row" style="gap:8px">
+      ${_avisos==="inactivos"?`<button class="btn primary sm" style="flex:1" onclick="activarAvisos()">Activar avisos</button>`:""}
+      <button class="btn ghost sm" onclick="cerrarTarjetaAvisos()">Ahora no</button></div>
+  </div>`;
+}
+function cerrarTarjetaAvisos(){ try{ localStorage.setItem(AVISOS_CERRADO_KEY,"1"); }catch(e){} render(); }
+
+// Pantalla de selección. Cuatro botones grandes y nada que rellenar.
+function mostrarSelector(aviso){
+  // Hay que parar el sondeo. Si no, cuatro segundos después llegaría el estado
+  // del servidor, se repintaría la app y aparecería ENCIMA del selector.
+  clearInterval(_poll);
+  olvidarPerfil();
+  $("desk").style.display="none";
+  $("mob").style.display="none";
+  $("modebar").style.display="none";
+  const boton=(p)=>`<button class="pick-btn${p.role==="parent"?" papas":""}" onclick="elegirPerfil('${esc(p.id)}')">
+      <span class="av" style="background:${escColor(p.color)}1f;color:${escColor(p.color)}">${esc(p.emoji)}</span>
+      <span><span class="nm">${esc(p.shortName||p.name)}</span>
+        <span class="rl">${p.role==="parent"?"Panel de la casa · ordenador":"Tus tareas y tu paga · móvil"}</span></span>
+      <span class="go">›</span></button>`;
+  const hijos=PERFILES.filter(p=>p.role==="child");
+  const papas=PERFILES.filter(p=>p.role==="parent");
+  $("picker").style.display="block";
+  $("picker").innerHTML=`<div class="pick-shell"><div class="pick-card">
+    <div class="pick-brand"><span class="dot">🏠</span>
+      <div><h1>Casa</h1><div class="sub">¿Quién eres?</div></div></div>
+    ${aviso?`<div class="pick-err">${esc(aviso)}</div>`:""}
+    <div class="pick-sep">Los hijos</div>
+    <div class="pick-list">${hijos.map(boton).join("")}</div>
+    <div class="pick-sep">Los papás</div>
+    <div class="pick-list uno">${papas.map(boton).join("")}</div>
+    <p class="pick-note">Se recuerda tu elección en este dispositivo.<br>Puedes cambiarla cuando quieras desde arriba.</p>
+  </div></div>`;
+}
+
+async function elegirPerfil(id){
+  if(!esPerfilValido(id)) return;
+  // Se llama desde la hoja de "cambiar de perfil": hay que cerrarla, o la
+  // pantalla nueva aparecería con la anterior encima.
+  closeSheet(); closeModal();
+  recordarPerfil(id);
+  // Cada persona tiene su propia pestaña abierta: al cambiar de perfil se
+  // vuelve al inicio en lugar de heredar la sección del anterior.
+  try{ localStorage.removeItem(TAB_KEY); }catch(e){}
+  await abrirPerfil(id);
+}
+
+// Cambiar de perfil = volver al selector. Un solo gesto, sin confirmaciones.
+function cambiarDePerfil(){
+  closeSheet(); closeModal();
+  mostrarSelector();
+}
+
+// `estado` es opcional: el arranque ya lo trae al comprobar el código de casa
+// y no hace falta pedirlo dos veces.
+async function abrirPerfil(id, estado){
+  try{
+    S = estado || await api("/api/state");
+    showConn(true);
+    ensureShape();
+    marcarBase();          // punto de partida para detectar mis propios cambios
+    restaurarPestanas();
+    // La vista sale del perfil: los papás al panel de escritorio, los hijos a
+    // su pantalla de móvil.
+    S.profile = id;
+    S.view = esHijo(id) ? "mob" : "desk";
+    $("picker").style.display = "none";
+    $("modebar").style.display = "";
+    render();
+    startPolling();
+    sincronizarAvisos();
+    if(!esHijo(id)) cargarInfoCasa(true);
+  }catch(e){
+    if(e.status===401) return;     // ya se está pidiendo el código de casa
+    showFatal("No se pudo cargar la casa. Comprueba la conexión y vuelve a intentarlo.");
+  }
+}
+
+function showFatal(msg){
+  clearInterval(_poll);
+  $("desk").style.display="none";
+  $("mob").style.display="none";
+  $("modebar").style.display="none";
+  $("picker").style.display="block";
+  $("picker").innerHTML=
+    '<div class="pick-shell"><div class="pick-card">'+
+    '<div class="pick-brand"><span class="dot">🏠</span><div><h1>Casa</h1>'+
+    '<div class="sub">Algo no ha ido bien</div></div></div>'+
+    '<div class="pick-err">'+esc(msg)+'</div>'+
+    '<button class="btn primary w" onclick="location.reload()">Reintentar</button>'+
+    '<button class="btn ghost w" style="margin-top:10px" onclick="mostrarSelector()">Elegir otro perfil</button>'+
+    '</div></div>';
+}
+
+// Sondeo cada 4 s (solo cuando la app está activa)
+let _poll=null;
+function startPolling(){
+  clearInterval(_poll);
+  _poll=setInterval(async()=>{
+    if(Date.now()-_lastSent<1500) return;
+    // no repintar por debajo de alguien que está rellenando un campo
+    const foco=document.activeElement;
+    if(foco && /^(INPUT|SELECT|TEXTAREA)$/.test(foco.tagName)) return;
+    // ni con una hoja o un diálogo abiertos
+    if($("sheet").classList.contains("open") || $("modalBg").classList.contains("open")) return;
+    try{
+      const remote = await api("/api/state");
+      showConn(true);
+      // preserva lo que es de este dispositivo; adopta el resto si cambió
+      const local={view:S.view,profile:S.profile,deskTab:S.deskTab,mobTab:S.mobTab};
+      if(JSON.stringify(stripLocal(remote))!==JSON.stringify(stripLocal(S))){
+        S=remote; Object.assign(S,local);
+        ensureShape();
+        marcarBase();        // lo que acabo de adoptar pasa a ser mi punto de partida
+        render({quiet:true}); // sincronización de fondo: sin animación de entrada
+      }else{
+        // Aunque el contenido sea igual, la versión puede haber avanzado.
+        S._version=remote._version;
+      }
+    }catch(e){
+      // 401: el código de casa ha cambiado o ya no vale. api() ya ha parado el
+      // sondeo y está pidiendo el nuevo; no es "sin conexión".
+      if(e.status!==401) showConn(false);
+    }
+  },4000);
+}
+// Campos que son de ESTE dispositivo y por tanto no cuentan como "ha cambiado
+// algo en la casa". Sin esto, cambiar de pestaña en un móvil repintaría la
+// pantalla de todos los demás y les movería la sección abierta.
+// _version también se ignora: que suba el contador no es "ha cambiado algo",
+// y si contara provocaría un repintado en cada vuelta del sondeo.
+function stripLocal(o){ const c={...o}; delete c.view; delete c.profile; delete c.deskTab; delete c.mobTab; delete c._version; return c; }
+
+// ---------------------------------------------------------------------------
+//  Modo demo (/demo)
+//  Carga demo.js, que sustituye api() por un servidor falso en memoria. Sirve
+//  para enseñar la app sin tocar los datos de casa: en modo demo NO sale ni
+//  una petición al servidor. Hay que cargarlo ANTES de bootstrap(), porque si
+//  no la app ya habría llamado a la API de verdad.
+// ---------------------------------------------------------------------------
+function esModoDemo(){
+  return location.pathname === "/demo" ||
+         location.pathname === "/demo/" ||
+         (location.hash||"").replace(/^#\/?/,"").split("?")[0] === "demo";
+}
+if (esModoDemo()) {
+  const _sDemo = document.createElement("script");
+  _sDemo.src = "/demo.js";
+  _sDemo.onload = () => bootstrap();
+  _sDemo.onerror = () => showFatal("No se pudo cargar la demo.");
+  document.head.appendChild(_sDemo);
+} else {
+  bootstrap();
+}
+
+// Si la app ya estaba abierta y se toca el enlace con el código, el navegador
+// solo cambia lo que va detrás de "#" y no recarga: sin esto, el código no se
+// guardaría hasta la próxima vez que se abriera la app.
+window.addEventListener("hashchange",()=>{
+  if(leerCodigoDeEnlace(location.hash)) bootstrap();
+});
+
+// Service worker: hace la app instalable (requisito de Google Play para poder
+// publicarla como TWA) y que abra al instante. Nunca cachea /api/ — ver sw.js.
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("/sw.js").catch(()=>{ /* sin SW la app funciona igual */ });
+  });
+}
+
+</script>
+</body>
+</html>

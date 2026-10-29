@@ -1,0 +1,29 @@
+# Dependabot watches the dependencies and opens a pull request whenever a new
+# version is released or a security vulnerability is disclosed.
+#
+# Every pull request runs the test workflow (.github/workflows/tests.yml)
+# before it can be merged: if it goes green, it is safe to merge.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Madrid
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: deps
+    # Minor and patch versions together in a single pull request: less noise.
+    # Major versions (e.g. Express 5) stay separate because they can break.
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci

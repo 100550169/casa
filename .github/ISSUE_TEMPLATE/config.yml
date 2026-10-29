@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Deploy on Render, step by step
+    url: https://github.com/100550169/casa/blob/main/docs/DEPLOY-ON-RENDER.md
+    about: Most installation questions are answered here.
+  - name: Security issue
+    url: https://github.com/100550169/casa/security/advisories/new
+    about: Report it privately, not in a public issue.

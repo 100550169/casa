@@ -1,0 +1,50 @@
+{
+  "_comment": [
+    "Bubblewrap configuration used to build the Android app (TWA).",
+    "",
+    "BEFORE BUILDING: replace TU-SERVICIO with the name of your Render service",
+    "in host, iconUrl, maskableIconUrl, webManifestUrl and fullScopeUrl. If you",
+    "ever change the address (for example, to a custom domain), update those fields,",
+    "increase appVersionCode and upload the new .aab to Google Play.",
+    "",
+    "packageId is the app’s permanent identifier on Google Play:",
+    "once published it can NEVER be changed."
+  ],
+  "packageId": "com.casa.tareas",
+  "host": "TU-SERVICIO.onrender.com",
+  "name": "Casa · tareas en familia",
+  "launcherName": "Casa",
+  "display": "standalone",
+  "themeColor": "#fff5e9",
+  "themeColorDark": "#fff5e9",
+  "navigationColor": "#fef6ea",
+  "navigationColorDark": "#fef6ea",
+  "navigationDividerColor": "#efe1cc",
+  "navigationDividerColorDark": "#efe1cc",
+  "backgroundColor": "#fef6ea",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://TU-SERVICIO.onrender.com/iconos/icono-512.png",
+  "maskableIconUrl": "https://TU-SERVICIO.onrender.com/iconos/icono-512-maskable.png",
+  "splashScreenFadeOutDuration": 300,
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://TU-SERVICIO.onrender.com/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://TU-SERVICIO.onrender.com/",
+  "minSdkVersion": 21,
+  "orientation": "default",
+  "signingKey": {
+    "path": "./casa-firma.keystore",
+    "alias": "casa"
+  }
+}

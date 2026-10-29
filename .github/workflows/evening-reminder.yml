@@ -1,0 +1,67 @@
+# Evening reminder: tells each child what is due today and tells the parents
+# what awaits their approval. Delivered to every phone with notifications on.
+#
+# GitHub triggers it because Render's free server sleeps when nobody uses it
+# and cannot wake itself up at a given time. The call wakes it up.
+#
+# GitHub DELAYS scheduled jobs when it is busy, sometimes by a lot: in October
+# 2026 a run scheduled for 18:00 arrived at 22:10. Therefore:
+#   - it is attempted five times over the afternoon, at unusual minutes
+#     (GitHub is busiest on the hour),
+#   - the server only sends inside the 17:00–21:30 window (Madrid time) and at
+#     most ONCE a day: the first punctual attempt wins and the rest do nothing;
+#     if every attempt is late, there is no reminder that day.
+#
+# Optional. To enable it (see docs/DEPLOY-ON-RENDER.md, step 7):
+#   GitHub → Settings → Secrets and variables → Actions
+#     - Variable CASA_URL     → https://<your-service>.onrender.com
+#     - Secret   CODIGO_CASA  → the same value as on Render (if you use one)
+# Without the CASA_URL variable the job is skipped and does nothing.
+# When run by hand (Actions → "Evening reminder" → Run workflow) it ignores the
+# time window so it can be tested; it still never sends twice on the same day.
+name: Evening reminder
+
+on:
+  schedule:
+    # UTC. Madrid is one hour ahead in winter and two in summer.
+    - cron: "7 15 * * *"
+    - cron: "41 15 * * *"
+    - cron: "13 16 * * *"
+    - cron: "47 16 * * *"
+    - cron: "19 17 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remind:
+    if: ${{ vars.CASA_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CASA_URL: ${{ vars.CASA_URL }}
+      CODIGO_CASA: ${{ secrets.CODIGO_CASA }}
+      FORCE: ${{ github.event_name == 'workflow_dispatch' && '?forzar=1' || '' }}
+    steps:
+      - name: Send the reminder
+        run: |
+          set -euo pipefail
+          code=000
+          for i in 1 2 3; do
+            code=$(curl -sS -o response.json -w '%{http_code}' --max-time 120 -X POST \
+              -H "X-Casa: ${CODIGO_CASA}" -H "X-Perfil: papas" \
+              "$CASA_URL/api/push/recordatorios$FORCE") || code=000
+            # A 401 is not fixed by retrying (and every attempt counts towards
+            # the brute-force lockout): stop and report it.
+            if [ "$code" = "200" ] || [ "$code" = "401" ]; then break; fi
+            echo "Attempt $i: HTTP $code. Retrying…"
+            sleep 20
+          done
+          cat response.json || true
+          echo
+          if [ "$code" = "401" ]; then
+            echo "::error::The household requires a code and the CODIGO_CASA secret is missing or does not match the one on Render."
+            exit 1
+          fi
+          [ "$code" = "200" ] || { echo "::error::The server answered HTTP $code."; exit 1; }
